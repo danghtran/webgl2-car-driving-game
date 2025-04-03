@@ -5,11 +5,15 @@ const radians = (degree) => {
 }
 
 const quaternionRotation = (v, degree) => {
+    const q = toQuaternion(v, degree);
+    return fromQuaternion(q); 
+}
+
+const toQuaternion = (v, degree) => {
     const angle = radians(degree/2);
     const re = Math.cos(angle);
     const im = Math.sin(angle) * (1 / length(v));
-    const q = [re, im * v[0], im * v[1], im * v[2]];
-    return fromQuaternion(q); 
+    return [re, im * v[0], im * v[1], im * v[2]];
 }
 
 const fromQuaternion = (q) => {
@@ -138,5 +142,6 @@ export {
     ortho,
     lookAt,
     lookAt2,
-    fromQuaternion
+    fromQuaternion,
+    toQuaternion
 }

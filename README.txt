@@ -10,3 +10,5 @@ In the project directory, you can run:
 ### `npm start` to start the application in development mode.
 
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+
+Try using button A,W,S,D,Q,E,R for some camera and car movement
