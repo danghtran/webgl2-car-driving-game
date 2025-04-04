@@ -33,7 +33,6 @@ export function Canvas(props) {
             console.log(cam.getViewMatrix());
             scene['ToyCar'].applyMvmt(mvmt['ToyCar']);
             scene['ToyCar'].render(gl, program, cam.projectionMatrix, cam.getViewMatrix(), normalize([-1, 3, 5]));
-            // scene['Glass'].render(gl, program, cam.projectionMatrix, cam.getViewMatrix(), normalize([-1, 3, 5]));
         }
     }, [scene, mvmt]);
 
@@ -42,15 +41,13 @@ export function Canvas(props) {
         const program = proRef.current;
         var {nodes, cams} = await loadGLTF(gl,program, "/ToyCar.gltf");
         console.log(nodes)
-        console.log(cams)
-        var mt = await loadGLTF(gl, program, "/scene.gltf");
-        console.log(mt)
+        nodes['ToyCar'].rotate(quaternionRotation([0,1,0], 180))
+        nodes['ToyCar'].rotate(quaternionRotation([1,0,0],-75))
         
         var cam = new CNode();
-        cam.pos = [0, 1, 10];
-        cam.dir = [0, 0, 0];
+        cam.translate(translation([0.11, 0.01, 0.15]))
         const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-        cam.projectionMatrix = perspective(0.9, 0.001, 2, aspect);
+        cam.projectionMatrix = perspective(0.9, 0.0001, 20, aspect);
         nodes['Camera'] = cam;
         setScence(nodes);
         setMvmt({})
@@ -117,35 +114,47 @@ export function Canvas(props) {
             case 'w':
                 setMvmt({
                     'Camera': {
-                        translate: [0, 0.001, 0]
+                        translate: [0, -0.005, 0]
                     }
                 })
                 break;
             case 's':
                 setMvmt({
                     'Camera': {
-                        translate: [0, -0.001, 0]
+                        translate: [0, 0.005, 0]
                     }
                 })
                 break;
             case 'q':
                 setMvmt({
                     'Camera': {
-                        translate: [0, 0, 0.001]
+                        translate: [0, -0.002, 0]
+                    },
+                    'ToyCar': {
+                        rotate: {
+                            axis: [0,0,1],
+                            degree: 5
+                        }
                     }
                 })
                 break;
             case 'e':
                 setMvmt({
                     'Camera': {
-                        translate: [0, 0, -0.001]
+                        translate: [0, 0.002, 0]
+                    },
+                    'ToyCar': {
+                        rotate: {
+                            axis: [0,0,1], 
+                            degree: -5
+                        }
                     }
                 })
                 break;
             case 'r':
                 setMvmt({
                     'ToyCar': {
-                        rotate: toQuaternion([0,1,0], 5)
+                        rotate: toQuaternion([1,0,0], 5)
                     }
                 })
             default:
