@@ -1,10 +1,10 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { skinVS, fs } from './Shader';
+import { skinVS, fs, skyboxVs, skyboxFs } from './Shader';
 import { loadGLTF } from './gltfLoader';
 import { createProgram, createShader } from './WebglHelper';
-import { perspective, quaternionRotation, toQuaternion, translation } from './Modeling';
-import { normalize } from './Matrix';
-import { CNode } from './Object';
+import { nonUniformScale, ortho, perspective, quaternionRotation, toQuaternion, translation } from './Modeling';
+import { mat4mult, normalize } from './Matrix';
+import { CNode, RNode, SkyNode } from './Object';
 import { Slider } from '@mui/material';
 
 export function Canvas(props) {
@@ -13,50 +13,66 @@ export function Canvas(props) {
     const proRef = useRef(null);
     const [scene, setScence] = useState(null);
     const [mvmt, setMvmt] = useState(null);
-    // test camera
 
     const render = useCallback(() => {
-        console.log(mvmt)
         if (scene !== null) {
-            
+            console.log(scene)
             const gl = glRef.current;
-            const program = proRef.current;
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-            gl.enable(gl.DEPTH_TEST);
-            // gl.enable(gl.CULL_FACE);
             gl.clearColor(.1, .1, .1, 1);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.useProgram(program);
 
             const cam = scene['Camera'];
             cam.applyMvmt(mvmt['Camera']);
-            console.log(cam.getViewMatrix());
-            scene['ToyCar'].applyMvmt(mvmt['ToyCar']);
-            scene['ToyCar'].render(gl, program, cam.projectionMatrix, cam.getViewMatrix(), normalize([-1, 3, 5]));
-            // scene['Glass'].render(gl, program, cam.projectionMatrix, cam.getViewMatrix(), normalize([-1, 3, 5]));
+
+            var program = proRef.current.skybox;
+            gl.depthMask(false);          
+            gl.disable(gl.CULL_FACE); 
+            var skyView = mat4mult(cam.getViewMatrix(), quaternionRotation([1, 0, 0], -90))
+            scene['Skybox'].render(gl, program, cam.projectionMatrix, skyView);
+
+            program = proRef.current.scene;
+            gl.depthMask(true);
+            gl.enable(gl.DEPTH_TEST);
+            // gl.enable(gl.CULL_FACE);
+            
+            gl.useProgram(program);
+            for (const [name, node] of Object.entries(scene)) {
+                if (node instanceof RNode) {
+                    node.applyMvmt(mvmt[name]);
+                    node.render(gl, program, cam.projectionMatrix, cam.getViewMatrix(), normalize([-1, 3, 5]));
+                }
+            }
         }
     }, [scene, mvmt]);
 
     const loadScene = async () => {
         const gl = glRef.current;
-        const program = proRef.current;
-        var {nodes, cams} = await loadGLTF(gl,program, "/ToyCar.gltf");
-        console.log(nodes)
-        console.log(cams)
-        var mt = await loadGLTF(gl, program, "/scene.gltf");
-        console.log(mt)
+        var program = proRef.current.scene;
         
         var cam = new CNode();
-        cam.pos = [0, 1, 10];
-        cam.dir = [0, 0, 0];
         const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-        cam.projectionMatrix = perspective(0.9, 0.001, 2, aspect);
-        nodes['Camera'] = cam;
-        setScence(nodes);
+        cam.projectionMatrix = perspective(2.09, 0.001, 200, aspect);
+        cam.rotate(quaternionRotation([1, 0, 0], 90))
+        cam.rotate(quaternionRotation([0, 0, 1], -75))
+        cam.translate(translation([-4.5, 0, 1.2]))
+        const allnodes = {
+            'Camera': cam
+        }
+        var toycar = await loadGLTF(gl,program, "toycar.gltf", "/toycar2/");
+        toycar.nodes['ToyCar'].translate(translation([-4.1, 0.5, -0.2]))
+        toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 1, 0], 90))
+        toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 0, 1], -90))
+
+        var t = await loadGLTF(gl, program, "Low_Poly_Forest.gltf", "/scene/");
+
+        program = proRef.current.skybox;
+        var sk = await loadGLTF(gl, program, "skybox.gltf", "/skybox/");
+        for (const name in sk.nodes) sk.nodes[name] = new SkyNode(sk.nodes[name]);
+
+        setScence(Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes))
+
         setMvmt({})
-        // for (const [name, mtnode] of Object.entries(mt.nodes)) {
-        //     mtnode.render(gl, program, cam.projectionMatrix, cam.getViewMatrix(), normalize([-1, 3, 5]));
-        // }
     }
 
 
@@ -79,14 +95,12 @@ export function Canvas(props) {
             // Create the vertex shader
             const vertexShader = createShader(gl, gl.VERTEX_SHADER, skinVS);
             const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fs);
-            const programOptions = {
-                attribLocations: {
-                  a_POSITION: 0,
-                  a_NORMAL: 1,
-                  a_TEXCOORD_0: 2,
-                },
-              };
-            proRef.current = createProgram(gl, vertexShader, fragmentShader, programOptions);
+            const skyboxShader = createShader(gl, gl.VERTEX_SHADER, skyboxVs);
+            const skyboxFShader = createShader(gl, gl.FRAGMENT_SHADER, skyboxFs);
+            proRef.current = {
+                scene: createProgram(gl, vertexShader, fragmentShader),
+                skybox: createProgram(gl, skyboxShader, skyboxFShader)
+            }
             loadScene();
         }
     }, []);
@@ -99,55 +113,43 @@ export function Canvas(props) {
     }, [mvmt, render]);
 
     const handleKeydownEvent = useCallback((e) => {
+        var camMvmt = CNode.getNextMvmt(e.key);
+        if (camMvmt !== undefined) {
+            setMvmt({
+                'Camera': camMvmt
+            })
+        }
         switch (e.key) {
-            case 'a':
-                setMvmt({
-                    'Camera': {
-                        translate: [-0.001, 0, 0]
-                    }
-                })
-                break;
-            case 'd':
-                setMvmt({
-                    'Camera': {
-                        translate: [0.001, 0, 0]
-                    }
-                })
-                break;
-            case 'w':
-                setMvmt({
-                    'Camera': {
-                        translate: [0, 0.001, 0]
-                    }
-                })
-                break;
-            case 's':
-                setMvmt({
-                    'Camera': {
-                        translate: [0, -0.001, 0]
-                    }
-                })
-                break;
-            case 'q':
-                setMvmt({
-                    'Camera': {
-                        translate: [0, 0, 0.001]
-                    }
-                })
-                break;
-            case 'e':
-                setMvmt({
-                    'Camera': {
-                        translate: [0, 0, -0.001]
-                    }
-                })
-                break;
             case 'r':
                 setMvmt({
                     'ToyCar': {
                         rotate: toQuaternion([0,1,0], 5)
+                    },
+                    'Glass': {
+                        rotate: toQuaternion([0,1,0], 5)
                     }
                 })
+                break;
+            case 't':
+                setMvmt({
+                    'ToyCar': {
+                        rotate: toQuaternion([0,0,1], 5)
+                    },
+                    'Glass': {
+                        rotate: toQuaternion([0,1,0], 5)
+                    }
+                })
+                break;
+            case 'y':
+                setMvmt({
+                    'ToyCar': {
+                        rotate: toQuaternion([1,0,0], 5)
+                    },
+                    'Glass': {
+                        rotate: toQuaternion([0,1,0], 5)
+                    }
+                })
+                break;
             default:
         }
     }, []);

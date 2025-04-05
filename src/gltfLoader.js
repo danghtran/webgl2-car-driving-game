@@ -1,4 +1,4 @@
-import { im } from "./Matrix";
+import { im, mat4mult } from "./Matrix";
 import { fromQuaternion, nonUniformScale, translation } from "./Modeling";
 import { createDefaultTexture } from "./WebglHelper";
 import { CNode, RNode } from "./Object";
@@ -62,6 +62,8 @@ const getAccessorAndWebGLBuffer = (gl, gltf, accessorIndex) => {
       bufferView.byteOffset + (accessor.byteOffset || 0), 
       accessor.count * numComponents
     );
+    // console.log(accessorIndex)
+    // console.log(data);
   
     gl.bindBuffer(target, buffer);
     gl.bufferData(target, data, gl.STATIC_DRAW);
@@ -99,6 +101,8 @@ const initiateRNodeWithVaoAndMaterial = async (gl, program, gltf, node) => {
       const {type, numComponents, numElements} = getAccessorAndWebGLBuffer(gl, gltf, index);
       var vName = `a_${attribName}`;
       var loc = gl.getAttribLocation(program, vName);
+      // console.log(vName);
+      // console.log(loc);
       if (type === 5123) {
         gl.vertexAttribIPointer(loc, numComponents, type, false, 0, 0);
       } else {
@@ -110,7 +114,7 @@ const initiateRNodeWithVaoAndMaterial = async (gl, program, gltf, node) => {
     const {type, numComponents, numElements} = getAccessorAndWebGLBuffer(gl, gltf, primitive.indices);
 
     var material = await handleMaterial(gl, gltf, primitive.material);
-    rnode.addPrimitive(vao, numElements, material);
+    rnode.addPrimitive(vao, numElements, material, type);
     gl.bindVertexArray(null);
   } 
   return rnode;
@@ -118,6 +122,15 @@ const initiateRNodeWithVaoAndMaterial = async (gl, program, gltf, node) => {
 
 const createRNode = async (gl, program, gltf, node) => {
   var rnode = await initiateRNodeWithVaoAndMaterial(gl, program, gltf, node);
+  if (node.rotMat) {
+    rnode.rotate(node.rotMat);
+  }
+  if (node.scaleMat) {
+    rnode.scale(node.scaleMat);
+  }
+  if (node.transMat) {
+    rnode.translate(node.transMat);
+  }
   if (node.translation) {
     rnode.translate(translation(node.translation));
   }
@@ -126,14 +139,10 @@ const createRNode = async (gl, program, gltf, node) => {
   }
   if (node.scale) {
     rnode.scale(nonUniformScale(node.scale));
-    // scale = nonUniformScale([0.0002, 0.0002, 0.0002]);
   }
-  return rnode;
-}
-
-const createRNodeChild = async (gl, program, gltf, parent, node) => {
-  var rnode = await initiateRNodeWithVaoAndMaterial(gl, program, gltf, node);
-  rnode.worldMatrix = parent.matrix;
+  if (node.matrix) {
+    rnode.parentMat = node.matrix;
+  }
   return rnode;
 }
 
@@ -180,23 +189,23 @@ const setTextureParam = (gl, paramEnum, paramVal) => {
 const handleTexture = async (gl, gltf, textureId) => {
   var textureSrc = gltf.textures[textureId];
   var imageSrc = gltf.images[textureSrc.source];
-  var sampler = gltf.samplers[textureSrc.sampler];
   const texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  setTextureParam(gl, gl.TEXTURE_MIN_FILTER, sampler.minFilter);
-  setTextureParam(gl, gl.TEXTURE_MAG_FILTER, sampler.magFilter);
-  setTextureParam(gl, gl.TEXTURE_WRAP_S, sampler.wrapS);
-  setTextureParam(gl, gl.TEXTURE_WRAP_T, sampler.wrapT);
-
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
 
   const image = await new Promise((res,rej)=> {
     var img = new Image();
-    img.src = imageSrc.uri;
+    img.src = gltf.prefix + imageSrc.uri;
     img.onload = () => res(img);
   })
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  if (textureSrc.sampler !== undefined) {
+    var sampler = gltf.samplers[textureSrc.sampler];
+    setTextureParam(gl, gl.TEXTURE_MIN_FILTER, sampler.minFilter);
+    setTextureParam(gl, gl.TEXTURE_MAG_FILTER, sampler.magFilter);
+    setTextureParam(gl, gl.TEXTURE_WRAP_S, sampler.wrapS);
+    setTextureParam(gl, gl.TEXTURE_WRAP_T, sampler.wrapT);
+  }
+  
   gl.generateMipmap(gl.TEXTURE_2D);
   return texture;
 }
@@ -204,30 +213,47 @@ const handleTexture = async (gl, gltf, textureId) => {
 const processNodes = async (gl, program, gltf, res, nodes, parent) => {
   for (const nodeIdx of nodes) {
     var node = gltf.nodes[nodeIdx];
-    if (node.mesh !== undefined && node.name !== 'Fabric') {
-      if (parent !== undefined) {
-        res.rnodes[node.name] = await createRNodeChild(gl, program, gltf, parent, node);
-      } else {
-        res.rnodes[node.name] = await createRNode(gl, program, gltf, node);
+    if (parent) {
+      // inherit transformation
+      if (parent.matrix) {
+        node.matrix = mat4mult(parent.matrix, (node.matrix || im()));
       }
+      if (parent.rotMat) {
+        node.rotMat = parent.rotMat;
+      }
+      if (parent.rotation) {
+        node.rotMat = mat4mult((node.rotMat || im()), fromQuaternion(parent.rotation));
+      }
+      if (parent.scaleMat) {
+        node.scaleMat = parent.scaleMat;
+      }
+      if (parent.scale) {
+        node.scaleMat = mat4mult((node.scaleMat || im()), nonUniformScale(parent.scale));
+      }
+      if (parent.transMat) {
+        node.transMat = parent.transMat;
+      }
+      if (parent.translation) {
+        node.transMat = mat4mult((node.transMat || im()), translation(parent.translation));
+      }
+    }
+    if (node.mesh !== undefined && node.name !== 'Fabric' && node.name !== 'Glass') {
+      res.rnodes[node.name] = await createRNode(gl, program, gltf, node);
     } else if (node.camera !== undefined) {
       res.cams.push(createCNode(gl, gltf, node))
     } else if (node.children) {
-      if (parent !== undefined) {
-        node.matrix = parent.matrix;
-      }
       await processNodes(gl, program, gltf, res, node.children, node);
     }
   }
 }
 
-const loadGLTF = async (gl, program, url) => {
-    const gltf = await loadJSON(url);
-    
+const loadGLTF = async (gl, program, url, prefix) => {
+    const gltf = await loadJSON(prefix + url);
+    gltf.prefix = prefix;
     // load all the referenced files relative to the gltf file
     // const baseURL = new URL(url, location.href);
     gltf.buffers = await Promise.all(gltf.buffers.map((buffer) => {
-      return loadBinary(buffer.uri);
+      return loadBinary(prefix + buffer.uri);
     }));
 
     console.log(gltf)

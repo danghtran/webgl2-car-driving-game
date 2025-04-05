@@ -1,5 +1,5 @@
 import { im, inverse, mat4mult, multmat4l } from "./Matrix";
-import { fromQuaternion, nonUniformScale, perspective, quaternionRotation, translation } from "./Modeling";
+import { fromQuaternion, nonUniformScale, perspective, quaternionRotation, toQuaternion, translation } from "./Modeling";
 
 class INode {
     constructor() {
@@ -34,17 +34,19 @@ export class RNode extends INode {
     constructor() {
       super();
       this.primitives = [];
+      this.parentMat = im();
     }
-    addPrimitive(vao, numElements, material) {
+    addPrimitive(vao, numElements, material, indexType) {
       this.primitives.push({
         vao: vao,
         numElements: numElements,
-        material: material
+        material: material,
+        indexType: indexType
       })
     }
 
     getWorldMatrix() {
-        return multmat4l([this.transMat, this.rotMat, this.scaleMat]);
+        return multmat4l([this.parentMat, this.transMat, this.rotMat, this.scaleMat]);
     }
 
     render(gl, program, projection, view, light) {
@@ -86,7 +88,7 @@ export class RNode extends INode {
         gl.activeTexture(gl.TEXTURE3);
         gl.bindTexture(gl.TEXTURE_2D, primitive.material["normalTexture"]);
         gl.uniform1i(uNormalTexture, 3);
-        gl.drawElements(gl.TRIANGLES, primitive.numElements, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, primitive.numElements, primitive.indexType, 0);
       }
     }
 }
@@ -95,6 +97,18 @@ export class CNode extends INode {
     constructor() {
         super();
         this.projectionMatrix = im();
+    }
+
+    static mvmtSet = {
+        "w": {translate: [0, 0.1, 0]},
+        "a": {translate: [-0.1, 0, 0]},
+        "d": {translate: [0.1, 0, 0]},
+        "s": {translate: [0, -0.1, 0]},
+        "q": {translate: [0, 0, 0.1]},
+        "e": {translate: [0, 0, -0.1]},
+        "z": {rotate: toQuaternion([0, 1, 0], 5)},
+        "x": {rotate: toQuaternion([1, 0, 0], 5)},
+        "c": {rotate: toQuaternion([0, 0, 1], 5)},
     }
 
     addView(gl, camera) {
@@ -106,6 +120,32 @@ export class CNode extends INode {
     }
     getViewMatrix() {
         return inverse(multmat4l([this.transMat, this.rotMat, this.scaleMat]));
+    }
+    static getNextMvmt(key) {
+        return this.mvmtSet[key];
+    }
+}
+
+export class SkyNode extends INode {
+    constructor(rnode) {
+        super();
+        this.primitives = rnode.primitives;
+    }
+
+    render(gl, program, projection, view) {
+        gl.useProgram(program);
+        for (const primitive of this.primitives) {
+          gl.bindVertexArray(primitive.vao);
+          var uProj = gl.getUniformLocation(program, "u_projection");
+          gl.uniformMatrix4fv(uProj, false, projection);
+          var uView = gl.getUniformLocation(program, "u_view");
+          gl.uniformMatrix4fv(uView, false, view);
+          var uEmissiveTexture = gl.getUniformLocation(program, "u_emissiveTexture");
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, primitive.material["emissiveTexture"]);
+          gl.uniform1i(uEmissiveTexture, 0);
+          gl.drawElements(gl.TRIANGLES, primitive.numElements, primitive.indexType, 0);
+        }
     }
 }
   
