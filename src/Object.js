@@ -92,6 +92,29 @@ export class RNode extends INode {
       }
     }
 }
+
+export class Car extends RNode{ //INode
+    currentDegree = 0;
+
+    applyMvmt(mvmt) {
+        if (mvmt === undefined) return;
+        if (mvmt.translate) {
+            this.translate(translation(mvmt.translate));
+        }
+        if (mvmt.rotate) {
+            console.log(this.currentDegree);
+            if (this.currentDegree + mvmt.rotate.degree < 45 &&
+                this.currentDegree + mvmt.rotate.degree > -45
+            ) {
+                this.currentDegree += mvmt.rotate.degree
+                this.rotate(quaternionRotation(mvmt.rotate.axis, mvmt.rotate.degree))
+            }
+        }
+        if (mvmt.scale) {
+            this.scale(nonUniformScale(mvmt.scale));
+        }
+    }
+}
   
 export class CNode extends INode {
     constructor() {

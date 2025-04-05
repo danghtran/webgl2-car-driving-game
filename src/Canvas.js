@@ -140,13 +140,50 @@ export function Canvas(props) {
                     }
                 })
                 break;
-            case 'y':
+            case 'w':
+                setMvmt({
+                    'Camera': {
+                        translate: [0, -0.005, 0]
+                    }
+                })
+                break;
+            case 's':
+                setMvmt({
+                    'Camera': {
+                        translate: [0, 0.005, 0]
+                    }
+                })
+                break;
+            case 'q':
+                setMvmt({
+                    'Camera': {
+                        translate: [0, -0.002, 0]
+                    },
+                    'ToyCar': {
+                        rotate: {
+                            axis: [0,0,1],
+                            degree: 5
+                        }
+                    }
+                })
+                break;
+            case 'e':
+                setMvmt({
+                    'Camera': {
+                        translate: [0, 0.002, 0]
+                    },
+                    'ToyCar': {
+                        rotate: {
+                            axis: [0,0,1], 
+                            degree: -5
+                        }
+                    }
+                })
+                break;
+            case 'r':
                 setMvmt({
                     'ToyCar': {
                         rotate: toQuaternion([1,0,0], 5)
-                    },
-                    'Glass': {
-                        rotate: toQuaternion([0,1,0], 5)
                     }
                 })
                 break;
