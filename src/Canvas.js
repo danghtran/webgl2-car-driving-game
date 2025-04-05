@@ -54,7 +54,8 @@ export function Canvas(props) {
                 requestAnimationFrame(() => {
                     
                     setMvmt({
-                        'Camera': CNode.getAutoMvmt()
+                        'Camera': CNode.getAutoMvmt(),
+                        'ToyCar': Car.getAutoMvmt()
                     });
                 })
             }, 100);

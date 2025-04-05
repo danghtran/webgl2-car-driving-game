@@ -75,7 +75,7 @@ export class RNode extends INode {
         gl.uniformMatrix4fv(uWorld, false, this.getWorldMatrix());
         var uLight = gl.getUniformLocation(program, "u_lightDirection");
         gl.uniform3fv(uLight, light);
-        const ambientColor = [1, 1, 1]; // Soft white ambient light
+        const ambientColor = [0.5, 0.5, 0.5]; // Soft white ambient light
         const uAmbientColor = gl.getUniformLocation(program, "u_ambientColor");
         gl.uniform3fv(uAmbientColor, ambientColor);
         const uBaseColorFactor = gl.getUniformLocation(program, "u_baseColorFactor");
@@ -111,6 +111,7 @@ export class Car extends RNode{ //INode
     constructor(rnode) {
         super(rnode);
         this.currentZDegree = 0;
+        this.pivotRotMat = im();
     }
 
     static mvmtSet = {
@@ -152,15 +153,38 @@ export class Car extends RNode{ //INode
             this.translate(translation(mvmt.translate));
         }
         if (mvmt.rotate) {
-            if (mvmt.rotate.axis[0] === 1 && this.currentZDegree + mvmt.rotate.degree < 45 &&
-                this.currentZDegree + mvmt.rotate.degree > -45
-            ) {
-                this.currentZDegree += mvmt.rotate.degree
-                this.rotate(quaternionRotation(mvmt.rotate.axis, mvmt.rotate.degree))
+            if (mvmt.rotate.pivot) {
+                this.rotatePivot(quaternionRotation(mvmt.rotate.axis, mvmt.rotate.degree));
+            } else {
+                if (mvmt.rotate.axis[0] === 1 && 
+                    this.currentZDegree + mvmt.rotate.degree < 45 &&
+                    this.currentZDegree + mvmt.rotate.degree > -45
+                ) {
+                    this.currentZDegree += mvmt.rotate.degree
+                    this.rotate(quaternionRotation(mvmt.rotate.axis, mvmt.rotate.degree))
+                }
             }
         }
         if (mvmt.scale) {
             this.scale(nonUniformScale(mvmt.scale));
+        }
+    }
+
+    rotatePivot(rot) {
+        this.pivotRotMat = mat4mult(rot, this.pivotRotMat);
+    }
+
+    getWorldMatrix() {
+        return multmat4l([this.parentMat, this.pivotRotMat, this.transMat, this.rotMat, this.scaleMat]);
+    }
+
+    static getAutoMvmt() {
+        return {
+            rotate: {
+                pivot: true,
+                axis: [0, 0, 1],
+                degree: 1
+            }
         }
     }
 }
