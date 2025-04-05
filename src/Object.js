@@ -2,11 +2,18 @@ import { im, inverse, mat4mult, multmat4l } from "./Matrix";
 import { fromQuaternion, nonUniformScale, perspective, quaternionRotation, toQuaternion, translation } from "./Modeling";
 
 class INode {
-    constructor() {
-        this.transMat = im();
-        this.rotMat = im();
-        this.scaleMat = im();
+    constructor(other) {
+        if (other) {
+            this.transMat = other.transMat;
+            this.rotMat = other.rotMat;
+            this.scaleMat = other.scaleMat;
+        } else {
+            this.transMat = im();
+            this.rotMat = im();
+            this.scaleMat = im();
+        }
     }
+
     rotate(rot) {
         this.rotMat = mat4mult(rot, this.rotMat);
     }
@@ -31,18 +38,25 @@ class INode {
 }
 
 export class RNode extends INode {
-    constructor() {
-      super();
-      this.primitives = [];
-      this.parentMat = im();
+    constructor(other) {
+        if (other) {
+            super(other);
+            this.primitives = other.primitives;
+            this.parentMat = other.parentMat;
+        } else {
+            super();
+            this.primitives = [];
+            this.parentMat = im();
+        }
     }
+
     addPrimitive(vao, numElements, material, indexType) {
-      this.primitives.push({
-        vao: vao,
-        numElements: numElements,
-        material: material,
-        indexType: indexType
-      })
+        this.primitives.push({
+            vao: vao,
+            numElements: numElements,
+            material: material,
+            indexType: indexType
+        })
     }
 
     getWorldMatrix() {
@@ -94,7 +108,43 @@ export class RNode extends INode {
 }
 
 export class Car extends RNode{ //INode
-    currentDegree = 0;
+    constructor(rnode) {
+        super(rnode);
+        this.currentZDegree = 0;
+    }
+
+    static mvmtSet = {
+        "w": {
+            rotate: {
+                axis: [1,0,0], 
+                degree: -5
+            }
+        },
+        "a": {
+            rotate: {
+                axis: [0, 0, 1],
+                degree: 1
+            },
+            translate: [0, 0.1, 0]
+        },
+        "d": {
+            rotate: {
+                axis: [0, 0, 1],
+                degree: 1
+            },
+            translate: [0, -0.1, 0]
+        },
+        "s": {
+            rotate: {
+                axis: [1,0,0], 
+                degree: 5
+            }
+        }
+    }
+
+    static getNextMvmt(key) {
+        return this.mvmtSet[key];
+    }
 
     applyMvmt(mvmt) {
         if (mvmt === undefined) return;
@@ -102,11 +152,10 @@ export class Car extends RNode{ //INode
             this.translate(translation(mvmt.translate));
         }
         if (mvmt.rotate) {
-            console.log(this.currentDegree);
-            if (this.currentDegree + mvmt.rotate.degree < 45 &&
-                this.currentDegree + mvmt.rotate.degree > -45
+            if (mvmt.rotate.axis[0] === 1 && this.currentZDegree + mvmt.rotate.degree < 45 &&
+                this.currentZDegree + mvmt.rotate.degree > -45
             ) {
-                this.currentDegree += mvmt.rotate.degree
+                this.currentZDegree += mvmt.rotate.degree
                 this.rotate(quaternionRotation(mvmt.rotate.axis, mvmt.rotate.degree))
             }
         }
@@ -123,10 +172,6 @@ export class CNode extends INode {
     }
 
     static mvmtSet = {
-        "w": {translate: [0, 0.1, 0]},
-        "a": {translate: [-0.1, 0, 0]},
-        "d": {translate: [0.1, 0, 0]},
-        "s": {translate: [0, -0.1, 0]},
         "q": {translate: [0, 0, 0.1]},
         "e": {translate: [0, 0, -0.1]},
         "z": {rotate: toQuaternion([0, 1, 0], 5)},

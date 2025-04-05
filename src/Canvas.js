@@ -4,7 +4,7 @@ import { loadGLTF } from './gltfLoader';
 import { createProgram, createShader } from './WebglHelper';
 import { nonUniformScale, ortho, perspective, quaternionRotation, toQuaternion, translation } from './Modeling';
 import { mat4mult, normalize } from './Matrix';
-import { CNode, RNode, SkyNode } from './Object';
+import { Car, CNode, RNode, SkyNode } from './Object';
 import { Slider } from '@mui/material';
 
 export function Canvas(props) {
@@ -60,6 +60,7 @@ export function Canvas(props) {
             'Camera': cam
         }
         var toycar = await loadGLTF(gl,program, "toycar.gltf", "/toycar2/");
+        for (const name in toycar.nodes) toycar.nodes[name] = new Car(toycar.nodes[name]);
         toycar.nodes['ToyCar'].translate(translation([-4.1, 0.5, -0.2]))
         toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 1, 0], 90))
         toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 0, 1], -90))
@@ -119,74 +120,14 @@ export function Canvas(props) {
                 'Camera': camMvmt
             })
         }
+        var carMvmt = Car.getNextMvmt(e.key);
+        if (carMvmt !== undefined) {
+            setMvmt({
+                'ToyCar': carMvmt
+            })
+        }
         switch (e.key) {
-            case 'r':
-                setMvmt({
-                    'ToyCar': {
-                        rotate: toQuaternion([0,1,0], 5)
-                    },
-                    'Glass': {
-                        rotate: toQuaternion([0,1,0], 5)
-                    }
-                })
-                break;
-            case 't':
-                setMvmt({
-                    'ToyCar': {
-                        rotate: toQuaternion([0,0,1], 5)
-                    },
-                    'Glass': {
-                        rotate: toQuaternion([0,1,0], 5)
-                    }
-                })
-                break;
-            case 'w':
-                setMvmt({
-                    'Camera': {
-                        translate: [0, -0.005, 0]
-                    }
-                })
-                break;
-            case 's':
-                setMvmt({
-                    'Camera': {
-                        translate: [0, 0.005, 0]
-                    }
-                })
-                break;
-            case 'q':
-                setMvmt({
-                    'Camera': {
-                        translate: [0, -0.002, 0]
-                    },
-                    'ToyCar': {
-                        rotate: {
-                            axis: [0,0,1],
-                            degree: 5
-                        }
-                    }
-                })
-                break;
-            case 'e':
-                setMvmt({
-                    'Camera': {
-                        translate: [0, 0.002, 0]
-                    },
-                    'ToyCar': {
-                        rotate: {
-                            axis: [0,0,1], 
-                            degree: -5
-                        }
-                    }
-                })
-                break;
-            case 'r':
-                setMvmt({
-                    'ToyCar': {
-                        rotate: toQuaternion([1,0,0], 5)
-                    }
-                })
-                break;
+           
             default:
         }
     }, []);
