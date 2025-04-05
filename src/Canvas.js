@@ -5,7 +5,7 @@ import { createProgram, createShader } from './WebglHelper';
 import { nonUniformScale, ortho, perspective, quaternionRotation, toQuaternion, translation } from './Modeling';
 import { mat4mult, normalize } from './Matrix';
 import { Car, CNode, RNode, SkyNode } from './Object';
-import { Slider } from '@mui/material';
+import { Button, Slider } from '@mui/material';
 
 export function Canvas(props) {
     const canvasRef = useRef(null);
@@ -13,6 +13,7 @@ export function Canvas(props) {
     const proRef = useRef(null);
     const [scene, setScence] = useState(null);
     const [mvmt, setMvmt] = useState(null);
+    const [game, setGame] = useState(null);
 
     const render = useCallback(() => {
         if (scene !== null) {
@@ -34,7 +35,7 @@ export function Canvas(props) {
             program = proRef.current.scene;
             gl.depthMask(true);
             gl.enable(gl.DEPTH_TEST);
-            // gl.enable(gl.CULL_FACE);
+            gl.enable(gl.CULL_FACE);
             
             gl.useProgram(program);
             for (const [name, node] of Object.entries(scene)) {
@@ -46,6 +47,25 @@ export function Canvas(props) {
         }
     }, [scene, mvmt]);
 
+    useEffect(() => {
+        var id;
+        if (game !== null && game.play) {
+            id = setInterval(() => {
+                requestAnimationFrame(() => {
+                    
+                    setMvmt({
+                        'Camera': CNode.getAutoMvmt()
+                    });
+                })
+            }, 100);
+        
+        }
+        
+        return () => {
+            clearInterval(id);
+        }
+    }, [game, scene]);
+
     const loadScene = async () => {
         const gl = glRef.current;
         var program = proRef.current.scene;
@@ -55,7 +75,7 @@ export function Canvas(props) {
         cam.projectionMatrix = perspective(2.09, 0.001, 200, aspect);
         cam.rotate(quaternionRotation([1, 0, 0], 90))
         cam.rotate(quaternionRotation([0, 0, 1], -75))
-        cam.translate(translation([-4.5, 0, 1.2]))
+        cam.translate(translation([0, 1.5, 4.8]))
         const allnodes = {
             'Camera': cam
         }
@@ -73,7 +93,9 @@ export function Canvas(props) {
 
         setScence(Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes))
 
-        setMvmt({})
+        setGame({
+            play: true
+        })
     }
 
 
@@ -140,7 +162,15 @@ export function Canvas(props) {
         }
     }, [handleKeydownEvent]);
 
+    const onPauseGame = () => {
+        setGame({
+            ...game,
+            play: !game.play
+        })
+    }
+
     return <div>
         <canvas ref={canvasRef} width={props.width} height={props.height} />
+        <div><Button onClick={onPauseGame}>Stop</Button></div>
     </div>;
 }

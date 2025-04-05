@@ -176,7 +176,7 @@ export class CNode extends INode {
         "e": {translate: [0, 0, -0.1]},
         "z": {rotate: toQuaternion([0, 1, 0], 5)},
         "x": {rotate: toQuaternion([1, 0, 0], 5)},
-        "c": {rotate: toQuaternion([0, 0, 1], 5)},
+        "c": {rotate: toQuaternion([0, 0, 1], -5)},
     }
 
     addView(gl, camera) {
@@ -187,10 +187,15 @@ export class CNode extends INode {
         }
     }
     getViewMatrix() {
-        return inverse(multmat4l([this.transMat, this.rotMat, this.scaleMat]));
+        return inverse(multmat4l([this.rotMat, this.transMat, this.scaleMat]));
     }
     static getNextMvmt(key) {
         return this.mvmtSet[key];
+    }
+    static getAutoMvmt() {
+        return {
+            rotate: toQuaternion([0, 0, 1], 1)
+        }
     }
 }
 
