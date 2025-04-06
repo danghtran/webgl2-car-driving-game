@@ -109,7 +109,6 @@ const initiateRNodeWithVaoAndMaterial = async (gl, program, gltf, node) => {
       const attribData = getAccessorAndWebGLBuffer(gl, gltf, index, includeBB);
       if (!boundingBox) {
         boundingBox = attribData.boundingBox;
-        if (node.name === 'ToyCar') console.log(boundingBox)
       }
       var vName = `a_${attribName}`;
       var loc = gl.getAttribLocation(program, vName);

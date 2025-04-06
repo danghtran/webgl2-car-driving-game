@@ -245,6 +245,14 @@ const inverse = (m) => {
     return res;
 }
 
+const vector = (p1, p2) => {
+    var res= [];
+    for (let i = 0; i<p1.length; i++) {
+        res[i] = p2[i] - p1[i];
+    }
+    return res;
+}
+
 
 export {
     im,
@@ -259,5 +267,6 @@ export {
     cross,
     dot,
     compose,
-    inverse
+    inverse,
+    vector
 };

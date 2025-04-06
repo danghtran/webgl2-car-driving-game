@@ -5,7 +5,8 @@ import { createProgram, createShader } from './WebglHelper';
 import { nonUniformScale, ortho, perspective, quaternionRotation, toQuaternion, translation } from './Modeling';
 import { mat4mult, normalize } from './Matrix';
 import { Car, CNode, PNode, RNode, SkyNode } from './Object';
-import { Button, Slider } from '@mui/material';
+import { Button, Slider, Switch } from '@mui/material';
+import { areIntersect } from './Physic';
 
 export function Canvas(props) {
     const canvasRef = useRef(null);
@@ -14,6 +15,30 @@ export function Canvas(props) {
     const [scene, setScence] = useState(null);
     const [mvmt, setMvmt] = useState(null);
     const [game, setGame] = useState(null);
+    const [showBox, setShowBox] = useState(false);
+
+    const applyTransform = useCallback(() => {
+        if (scene !== null) {
+            for (const [name, node] of Object.entries(scene)) {
+                if (node instanceof RNode) {
+                    node.applyMvmt(mvmt[name]);
+                }
+            }
+            //
+            var carBBs = scene['ToyCar'].getWorldBoundingBox();
+            var otherBBs = Object.entries(scene)
+                            .filter(([k, v]) => v instanceof PNode)
+                            .filter(([k, v]) => k !== 'ToyCar')
+                            .flatMap(([k, v]) => v.getWorldBoundingBox());
+            for (const bb of otherBBs) {
+                for (const carbb of carBBs) {
+                    if (areIntersect(carbb.min, carbb.max, bb.min, bb.max)) {
+                        console.log('Collided')
+                    }
+                }
+            }
+        }
+    }, [scene, mvmt]);
 
     const render = useCallback(() => {
         if (scene !== null) {
@@ -29,7 +54,7 @@ export function Canvas(props) {
             var program = proRef.current.skybox;
             gl.depthMask(false);          
             gl.disable(gl.CULL_FACE); 
-            var skyView = mat4mult(cam.getViewMatrix(), quaternionRotation([1, 0, 0], -90))
+            var skyView = mat4mult(viewMatrix, quaternionRotation([1, 0, 0], -90))
             scene['Skybox'].render(gl, program, cam.projectionMatrix, skyView);
 
             program = proRef.current.scene;
@@ -40,14 +65,15 @@ export function Canvas(props) {
             gl.useProgram(program);
             for (const [name, node] of Object.entries(scene)) {
                 if (node instanceof RNode) {
-                    node.applyMvmt(mvmt[name]);
                     node.render(gl, program, cam.projectionMatrix, viewMatrix, normalize([-1, 3, 5]));
                 }
             }
-            program = proRef.current.boundingBox;
-            for (const [name, node] of Object.entries(scene)) {
-                if (node instanceof PNode) {
-                    node.renderBoundingBox(gl, program, cam.projectionMatrix, viewMatrix);
+            if (showBox) {
+                program = proRef.current.boundingBox;
+                for (const [name, node] of Object.entries(scene)) {
+                    if (node instanceof PNode) {
+                        node.renderBoundingBox(gl, program, cam.projectionMatrix, viewMatrix);
+                    }
                 }
             }
         }
@@ -140,6 +166,7 @@ export function Canvas(props) {
 
     useEffect(() => {
         if (mvmt !== null) {
+            applyTransform();
             render();
             setMvmt(null);
         }
@@ -179,8 +206,16 @@ export function Canvas(props) {
         })
     }
 
+    const onShowBox = (e, newValue) => {
+        setShowBox(newValue);
+    }
+
     return <div>
         <canvas ref={canvasRef} width={props.width} height={props.height} />
-        <div><Button onClick={onPauseGame}>Stop</Button></div>
+        <div>
+            <Button variant="outlined" onClick={onPauseGame}>Stop</Button>
+            <Switch value={showBox} onChange={onShowBox}></Switch>
+        </div>
+        
     </div>;
 }

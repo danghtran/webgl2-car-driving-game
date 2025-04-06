@@ -1,5 +1,6 @@
 import { im, inverse, mat4mult, mat4multp, multmat4l } from "./Matrix";
 import { fromQuaternion, nonUniformScale, perspective, quaternionRotation, toQuaternion, translation } from "./Modeling";
+import { getBoundingBoxVertices } from "./Physic";
 
 class INode {
     constructor(other) {
@@ -109,10 +110,10 @@ export class PNode extends RNode {
         super(rnode);
     }
 
-    getWorldBoundingBox(bb, worldModel) {
+    getWorldBoundingBoxVertices(bbVertices, worldModel) {
         var newbb = [];
-        for (let i = 0; i < bb.length; i += 3) {
-            var worldCorner = mat4multp(worldModel, [bb[i], bb[i+1], bb[i+2], 1]);
+        for (let i = 0; i < bbVertices.length; i += 3) {
+            var worldCorner = mat4multp(worldModel, [bbVertices[i], bbVertices[i+1], bbVertices[i+2], 1]);
             newbb[i] = worldCorner[0];
             newbb[i+1] = worldCorner[1];
             newbb[i+2] = worldCorner[2];
@@ -120,15 +121,30 @@ export class PNode extends RNode {
         return newbb;
     }
 
+    getWorldBoundingBox() {
+        var bbs = [];
+        const worldModel = this.getWorldMatrix();
+        for (const primitive of this.primitives) {
+            const bb = primitive.boundingBox;
+            bbs.push({
+                min: mat4multp(worldModel, [bb.min[0], bb.min[1], bb.min[2], 1]),
+                max: mat4multp(worldModel, [bb.max[0], bb.max[1], bb.max[2], 1])
+            });
+        }
+        return bbs;
+    }
+
     renderBoundingBox(gl, program, projection, view) {
         gl.useProgram(program);
         const worldMatrix = this.getWorldMatrix();
         for (const primitive of this.primitives) {
             const buffer = gl.createBuffer();
-            const vertices = new Float32Array(this.getWorldBoundingBox(primitive.boundingBox, worldMatrix));
+            const bbVert = getBoundingBoxVertices(primitive.boundingBox.min, primitive.boundingBox.max);
+            const vertices = this.getWorldBoundingBoxVertices(bbVert, worldMatrix);
+            const verticesArr = new Float32Array(vertices);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, verticesArr, gl.STATIC_DRAW);
             var loc = gl.getAttribLocation(program, "a_POSITION");
             gl.vertexAttribPointer(loc, 3, 5126, false, 0, 0);
             gl.enableVertexAttribArray(loc);
@@ -150,6 +166,7 @@ export class PNode extends RNode {
             gl.drawElements(gl.LINES, idx.length, gl.UNSIGNED_BYTE, 0);
         }
     }
+
 }
 
 export class Car extends PNode { //INode

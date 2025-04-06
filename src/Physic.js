@@ -1,3 +1,5 @@
+import { normalize, vector } from "./Matrix";
+
 const calculateBoundingBox = (data) => {
     const min = [Infinity, Infinity, Infinity];
     const max = [-Infinity, -Infinity, -Infinity];
@@ -16,6 +18,13 @@ const calculateBoundingBox = (data) => {
       max[2] = Math.max(max[2], z);
     }
 
+    return {
+        min: min,
+        max: max
+    }
+}
+
+const getBoundingBoxVertices = (min, max) => {
     return [
         min[0], min[1], min[2],
         max[0], min[1], min[2], 
@@ -28,6 +37,14 @@ const calculateBoundingBox = (data) => {
     ];
 }
 
+const areIntersect = (min1, max1, min2, max2) => {
+    return min1[0] <= max2[0] && max1[0] >= min2[0] &&
+    min1[1] <= max2[1] && max1[1] >= min2[1] &&
+    min1[2] <= max2[2] && max1[2] >= min2[2]; 
+}
+
 export {
-    calculateBoundingBox
+    calculateBoundingBox,
+    getBoundingBoxVertices,
+    areIntersect
 }
