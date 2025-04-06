@@ -1,7 +1,8 @@
 import { im, mat4mult } from "./Matrix";
 import { fromQuaternion, nonUniformScale, translation } from "./Modeling";
 import { createDefaultTexture } from "./WebglHelper";
-import { CNode, RNode } from "./Object";
+import { CNode, PNode, RNode } from "./Object";
+import { calculateBoundingBox } from "./Physic";
 
 const loadFile = async (url, type) => {
     const response = await fetch(url);
@@ -48,7 +49,7 @@ const glTypeToTypedArray = (type) => {
     return glTypeToTypedArrayMap[type];
 }
 
-const getAccessorAndWebGLBuffer = (gl, gltf, accessorIndex) => {
+const getAccessorAndWebGLBuffer = (gl, gltf, accessorIndex, includeBB) => {
     const accessor = gltf.accessors[accessorIndex];
     const bufferView = gltf.bufferViews[accessor.bufferView];
     const buffer = gl.createBuffer();
@@ -64,6 +65,10 @@ const getAccessorAndWebGLBuffer = (gl, gltf, accessorIndex) => {
     );
     // console.log(accessorIndex)
     // console.log(data);
+    var boundingBox;
+    if (includeBB) {
+      boundingBox = calculateBoundingBox(data);
+    }
   
     gl.bindBuffer(target, buffer);
     gl.bufferData(target, data, gl.STATIC_DRAW);
@@ -71,7 +76,8 @@ const getAccessorAndWebGLBuffer = (gl, gltf, accessorIndex) => {
     return {
       type: accessor.componentType,
       numComponents: numComponents,
-      numElements: data.length
+      numElements: data.length,
+      boundingBox: boundingBox
     };
 }
 
@@ -93,28 +99,40 @@ const createCNode = (gl, gltf, node) => {
 
 const initiateRNodeWithVaoAndMaterial = async (gl, program, gltf, node) => {
   var mesh = gltf.meshes[node.mesh];
-  var rnode = new RNode();
+  var rnode =  mesh.physic? new PNode() : new RNode();
   for (const primitive of mesh.primitives) {
     var vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
+    var boundingBox;
     for (const [attribName, index] of Object.entries(primitive.attributes)) {
-      const {type, numComponents, numElements} = getAccessorAndWebGLBuffer(gl, gltf, index);
+      const includeBB = mesh.physic && attribName === 'POSITION';
+      const attribData = getAccessorAndWebGLBuffer(gl, gltf, index, includeBB);
+      if (!boundingBox) {
+        boundingBox = attribData.boundingBox;
+        if (node.name === 'ToyCar') console.log(boundingBox)
+      }
       var vName = `a_${attribName}`;
       var loc = gl.getAttribLocation(program, vName);
       // console.log(vName);
       // console.log(loc);
-      if (type === 5123) {
-        gl.vertexAttribIPointer(loc, numComponents, type, false, 0, 0);
+      if (attribData.type === 5123) {
+        gl.vertexAttribIPointer(loc, attribData.numComponents, attribData.type, false, 0, 0);
       } else {
-        gl.vertexAttribPointer(loc, numComponents, type, false, 0, 0);
+        gl.vertexAttribPointer(loc, attribData.numComponents, attribData.type, false, 0, 0);
       }
       gl.enableVertexAttribArray(loc);
     }
 
-    const {type, numComponents, numElements} = getAccessorAndWebGLBuffer(gl, gltf, primitive.indices);
+    const idxData = getAccessorAndWebGLBuffer(gl, gltf, primitive.indices);
 
     var material = await handleMaterial(gl, gltf, primitive.material);
-    rnode.addPrimitive(vao, numElements, material, type);
+    rnode.addPrimitive({
+      vao: vao, 
+      numElements: idxData.numElements, 
+      material: material, 
+      indexType: idxData.type, 
+      boundingBox: boundingBox
+    });
     gl.bindVertexArray(null);
   } 
   return rnode;

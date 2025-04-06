@@ -4769,6 +4769,7 @@
 		},
 		{
 			"name":"cloud",
+			"physic": true,
 			"primitives":[
 				{
 					"attributes":{
@@ -4783,6 +4784,7 @@
 		},
 		{
 			"name":"Plane.011",
+			"physic":true,
 			"primitives":[
 				{
 					"attributes":{

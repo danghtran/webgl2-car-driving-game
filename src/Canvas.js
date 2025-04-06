@@ -1,10 +1,10 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { skinVS, fs, skyboxVs, skyboxFs } from './Shader';
+import { skinVS, fs, skyboxVs, skyboxFs, bbVs, bbFs } from './Shader';
 import { loadGLTF } from './gltfLoader';
 import { createProgram, createShader } from './WebglHelper';
 import { nonUniformScale, ortho, perspective, quaternionRotation, toQuaternion, translation } from './Modeling';
 import { mat4mult, normalize } from './Matrix';
-import { Car, CNode, RNode, SkyNode } from './Object';
+import { Car, CNode, PNode, RNode, SkyNode } from './Object';
 import { Button, Slider } from '@mui/material';
 
 export function Canvas(props) {
@@ -17,7 +17,6 @@ export function Canvas(props) {
 
     const render = useCallback(() => {
         if (scene !== null) {
-            console.log(scene)
             const gl = glRef.current;
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             gl.clearColor(.1, .1, .1, 1);
@@ -25,6 +24,7 @@ export function Canvas(props) {
 
             const cam = scene['Camera'];
             cam.applyMvmt(mvmt['Camera']);
+            const viewMatrix = cam.getViewMatrix();
 
             var program = proRef.current.skybox;
             gl.depthMask(false);          
@@ -41,7 +41,13 @@ export function Canvas(props) {
             for (const [name, node] of Object.entries(scene)) {
                 if (node instanceof RNode) {
                     node.applyMvmt(mvmt[name]);
-                    node.render(gl, program, cam.projectionMatrix, cam.getViewMatrix(), normalize([-1, 3, 5]));
+                    node.render(gl, program, cam.projectionMatrix, viewMatrix, normalize([-1, 3, 5]));
+                }
+            }
+            program = proRef.current.boundingBox;
+            for (const [name, node] of Object.entries(scene)) {
+                if (node instanceof PNode) {
+                    node.renderBoundingBox(gl, program, cam.projectionMatrix, viewMatrix);
                 }
             }
         }
@@ -121,9 +127,12 @@ export function Canvas(props) {
             const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fs);
             const skyboxShader = createShader(gl, gl.VERTEX_SHADER, skyboxVs);
             const skyboxFShader = createShader(gl, gl.FRAGMENT_SHADER, skyboxFs);
+            const boundingBoxShader = createShader(gl, gl.VERTEX_SHADER, bbVs);
+            const boundingBoxFShader = createShader(gl, gl.FRAGMENT_SHADER, bbFs);
             proRef.current = {
                 scene: createProgram(gl, vertexShader, fragmentShader),
-                skybox: createProgram(gl, skyboxShader, skyboxFShader)
+                skybox: createProgram(gl, skyboxShader, skyboxFShader),
+                boundingBox: createProgram(gl, boundingBoxShader, boundingBoxFShader)
             }
             loadScene();
         }

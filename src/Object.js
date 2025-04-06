@@ -1,4 +1,4 @@
-import { im, inverse, mat4mult, multmat4l } from "./Matrix";
+import { im, inverse, mat4mult, mat4multp, multmat4l } from "./Matrix";
 import { fromQuaternion, nonUniformScale, perspective, quaternionRotation, toQuaternion, translation } from "./Modeling";
 
 class INode {
@@ -50,13 +50,8 @@ export class RNode extends INode {
         }
     }
 
-    addPrimitive(vao, numElements, material, indexType) {
-        this.primitives.push({
-            vao: vao,
-            numElements: numElements,
-            material: material,
-            indexType: indexType
-        })
+    addPrimitive(primitive) {
+        this.primitives.push(primitive);
     }
 
     getWorldMatrix() {
@@ -103,13 +98,63 @@ export class RNode extends INode {
         gl.bindTexture(gl.TEXTURE_2D, primitive.material["normalTexture"]);
         gl.uniform1i(uNormalTexture, 3);
         gl.drawElements(gl.TRIANGLES, primitive.numElements, primitive.indexType, 0);
+        gl.bindVertexArray(null);
       }
     }
 }
 
-export class Car extends RNode{ //INode
+// Nodes with physical collision
+export class PNode extends RNode {
     constructor(rnode) {
         super(rnode);
+    }
+
+    getWorldBoundingBox(bb, worldModel) {
+        var newbb = [];
+        for (let i = 0; i < bb.length; i += 3) {
+            var worldCorner = mat4multp(worldModel, [bb[i], bb[i+1], bb[i+2], 1]);
+            newbb[i] = worldCorner[0];
+            newbb[i+1] = worldCorner[1];
+            newbb[i+2] = worldCorner[2];
+        }
+        return newbb;
+    }
+
+    renderBoundingBox(gl, program, projection, view) {
+        gl.useProgram(program);
+        const worldMatrix = this.getWorldMatrix();
+        for (const primitive of this.primitives) {
+            const buffer = gl.createBuffer();
+            const vertices = new Float32Array(this.getWorldBoundingBox(primitive.boundingBox, worldMatrix));
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+            var loc = gl.getAttribLocation(program, "a_POSITION");
+            gl.vertexAttribPointer(loc, 3, 5126, false, 0, 0);
+            gl.enableVertexAttribArray(loc);
+
+            const idxBuffer = gl.createBuffer();
+            const idx = new Uint8Array([
+                0, 1,  1, 3,  3, 2,  2, 0, 
+                4, 5,  5, 7,  7, 6,  6, 4,
+                0, 4,  1, 5,  2, 6,  3, 7
+            ]);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+
+            var uProj = gl.getUniformLocation(program, "u_projection");
+            gl.uniformMatrix4fv(uProj, false, projection);
+            var uView = gl.getUniformLocation(program, "u_view");
+            gl.uniformMatrix4fv(uView, false, view);
+
+            gl.drawElements(gl.LINES, idx.length, gl.UNSIGNED_BYTE, 0);
+        }
+    }
+}
+
+export class Car extends PNode { //INode
+    constructor(pnode) {
+        super(pnode);
         this.currentZDegree = 0;
         this.pivotRotMat = im();
     }
@@ -168,6 +213,7 @@ export class Car extends RNode{ //INode
         if (mvmt.scale) {
             this.scale(nonUniformScale(mvmt.scale));
         }
+        //this.updateBoundingBox();
     }
 
     rotatePivot(rot) {

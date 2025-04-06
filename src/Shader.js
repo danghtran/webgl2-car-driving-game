@@ -78,7 +78,6 @@ const skyboxVs = `#version 300 es
     uniform mat4 u_projection;
 
     void main() {
-        // Remove translation so it follows camera rotation only
         mat4 viewRotationOnly = mat4(mat3(u_view));
         vec4 pos = viewRotationOnly * a_POSITION;
         gl_Position = u_projection * pos;
@@ -101,9 +100,32 @@ const skyboxFs = `#version 300 es
     }
 `;
 
+const bbVs = `#version 300 es
+    in vec4 a_POSITION;
+
+    uniform mat4 u_view;
+    uniform mat4 u_projection;
+
+    void main() {
+        gl_Position = u_projection * u_view * a_POSITION;
+    }
+`;
+
+const bbFs = `#version 300 es
+    precision mediump float;
+
+    out vec4 outColor;
+
+    void main() {
+        outColor = vec4(1.0, 0.0, 0.0, 1.0);
+    }
+`;
+
 export {
     skinVS, 
     skyboxFs,
     skyboxVs,
-    fs
+    fs,
+    bbVs,
+    bbFs
 }

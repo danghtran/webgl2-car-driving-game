@@ -73,6 +73,7 @@
 	"meshes":[
 		{
 			"name":"ToyCar",
+			"physic":true,
 			"primitives":[
 				{
 					"attributes":{
