@@ -59,7 +59,7 @@ export class RNode extends INode {
         return multmat4l([this.parentMat, this.transMat, this.rotMat, this.scaleMat]);
     }
 
-    render(gl, program, projection, view, light) {
+    render(gl, program, projection, view, env) {
       gl.useProgram(program);
       for (const primitive of this.primitives) {
         gl.bindVertexArray(primitive.vao);
@@ -70,10 +70,16 @@ export class RNode extends INode {
         var uWorld = gl.getUniformLocation(program, "u_world");
         gl.uniformMatrix4fv(uWorld, false, this.getWorldMatrix());
         var uLight = gl.getUniformLocation(program, "u_lightDirection");
-        gl.uniform3fv(uLight, light);
-        const ambientColor = [0.5, 0.5, 0.5]; // Soft white ambient light
+        gl.uniform3fv(uLight, env.light);
+        const ambientColor = [0.5, 0.5, 0.5];
         const uAmbientColor = gl.getUniformLocation(program, "u_ambientColor");
         gl.uniform3fv(uAmbientColor, ambientColor);
+        const uFogColor = gl.getUniformLocation(program, "u_fogColor");
+        gl.uniform4fv(uFogColor, env.fog.color);
+        const uFogNear = gl.getUniformLocation(program, "u_fogNear");
+        gl.uniform1f(uFogNear, env.fog.near);
+        const uFogFar = gl.getUniformLocation(program, "u_fogFar");
+        gl.uniform1f(uFogFar, env.fog.far);
         const uBaseColorFactor = gl.getUniformLocation(program, "u_baseColorFactor");
         gl.uniform4fv(uBaseColorFactor, primitive.material.pbr.baseColorFactor);
         const uMetallicFactor = gl.getUniformLocation(program, "u_metallicFactor");
@@ -292,7 +298,7 @@ export class SkyNode extends INode {
         this.primitives = rnode.primitives;
     }
 
-    render(gl, program, projection, view) {
+    render(gl, program, projection, view, env) {
         gl.useProgram(program);
         for (const primitive of this.primitives) {
           gl.bindVertexArray(primitive.vao);
@@ -300,6 +306,12 @@ export class SkyNode extends INode {
           gl.uniformMatrix4fv(uProj, false, projection);
           var uView = gl.getUniformLocation(program, "u_view");
           gl.uniformMatrix4fv(uView, false, view);
+          const uFogColor = gl.getUniformLocation(program, "u_fogColor");
+          gl.uniform4fv(uFogColor, env.fog.color);
+          const uFogNear = gl.getUniformLocation(program, "u_fogNear");
+          gl.uniform1f(uFogNear, env.fog.near);
+          const uFogFar = gl.getUniformLocation(program, "u_fogFar");
+          gl.uniform1f(uFogFar, env.fog.far);
           var uEmissiveTexture = gl.getUniformLocation(program, "u_emissiveTexture");
           gl.activeTexture(gl.TEXTURE0);
           gl.bindTexture(gl.TEXTURE_2D, primitive.material["emissiveTexture"]);

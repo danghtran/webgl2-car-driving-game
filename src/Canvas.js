@@ -13,9 +13,11 @@ export function Canvas(props) {
     const glRef = useRef(null);
     const proRef = useRef(null);
     const [scene, setScence] = useState(null);
+    const [env, setEnv] = useState(null);
     const [mvmt, setMvmt] = useState(null);
     const [game, setGame] = useState(null);
     const [showBox, setShowBox] = useState(false);
+    const [fogIntensity, setFogIntensity] = useState(1);
 
     const applyTransform = useCallback(() => {
         if (scene !== null) {
@@ -44,7 +46,7 @@ export function Canvas(props) {
         if (scene !== null) {
             const gl = glRef.current;
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-            gl.clearColor(.1, .1, .1, 1);
+            gl.clearColor(...env.fog.color);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
             const cam = scene['Camera'];
@@ -55,7 +57,7 @@ export function Canvas(props) {
             gl.depthMask(false);          
             gl.disable(gl.CULL_FACE); 
             var skyView = mat4mult(viewMatrix, quaternionRotation([1, 0, 0], -90))
-            scene['Skybox'].render(gl, program, cam.projectionMatrix, skyView);
+            scene['Skybox'].render(gl, program, cam.projectionMatrix, skyView, env);
 
             program = proRef.current.scene;
             gl.depthMask(true);
@@ -65,7 +67,7 @@ export function Canvas(props) {
             gl.useProgram(program);
             for (const [name, node] of Object.entries(scene)) {
                 if (node instanceof RNode) {
-                    node.render(gl, program, cam.projectionMatrix, viewMatrix, normalize([-1, 3, 5]));
+                    node.render(gl, program, cam.projectionMatrix, viewMatrix, env);
                 }
             }
             if (showBox) {
@@ -77,7 +79,7 @@ export function Canvas(props) {
                 }
             }
         }
-    }, [scene, mvmt]);
+    }, [scene, mvmt, env]);
 
     useEffect(() => {
         var id;
@@ -98,6 +100,17 @@ export function Canvas(props) {
             clearInterval(id);
         }
     }, [game, scene]);
+
+    const loadEnv = () => {
+        setEnv({
+            light: normalize([-1, 3, 5]),
+            fog: {
+                color: [0.4, 0.4, 0.4, 1],
+                near: 1,
+                far: 1.5
+            }
+        })
+    }
 
     const loadScene = async () => {
         const gl = glRef.current;
@@ -160,6 +173,7 @@ export function Canvas(props) {
                 skybox: createProgram(gl, skyboxShader, skyboxFShader),
                 boundingBox: createProgram(gl, boundingBoxShader, boundingBoxFShader)
             }
+            loadEnv();
             loadScene();
         }
     }, []);
@@ -210,11 +224,23 @@ export function Canvas(props) {
         setShowBox(newValue);
     }
 
+    const onFogIntensity = (e, newValue) => {
+        setFogIntensity(newValue);
+        setEnv({
+            ...env,
+            fog: {
+                ...env.fog,
+                near: newValue
+            }
+        })
+    }
+
     return <div>
         <canvas ref={canvasRef} width={props.width} height={props.height} />
         <div>
             <Button variant="outlined" onClick={onPauseGame}>Stop</Button>
             <Switch value={showBox} onChange={onShowBox}></Switch>
+            <Slider value={fogIntensity} min={-1} max={1} onChange={onFogIntensity} step={0.2}></Slider>
         </div>
         
     </div>;

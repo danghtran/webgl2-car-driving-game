@@ -36,6 +36,9 @@ const fs = `#version 300 es
     uniform float u_metallicFactor;
     uniform float u_roughnessFactor;
     uniform vec3 u_emissiveFactor;
+    uniform vec4 u_fogColor;
+    uniform float u_fogNear;
+    uniform float u_fogFar;
     uniform sampler2D u_baseColorTexture;
     uniform sampler2D u_omrTexture;
     uniform sampler2D u_emissiveTexture;
@@ -60,9 +63,9 @@ const fs = `#version 300 es
         vec3 diffuse = baseColor.rgb * diff * (1.0 - metallic);
         vec3 ambient = baseColor.rgb * u_ambientColor * occlusion;
         vec3 emissive = texture(u_emissiveTexture, v_texCoord).rgb * u_emissiveFactor;
-        outColor = vec4(ambient + diffuse + emissive, 1.0);
-        //vec2 tt = vec2(v_texCoord.x, v_texCoord.y);
-        //outColor = vec4(tt, 0.0, 1.0); ;
+        vec4 finalColor = vec4(ambient + diffuse + emissive, 1.0);
+        float fogAmount = smoothstep(u_fogNear, u_fogFar, gl_FragCoord.z);
+        outColor = mix(finalColor, u_fogColor, fogAmount);  
     }
 `;
 
@@ -93,10 +96,15 @@ const skyboxFs = `#version 300 es
     in vec3 v_normal;
     out vec4 outColor;
 
+    uniform vec4 u_fogColor;
+    uniform float u_fogNear;
+    uniform float u_fogFar;
     uniform sampler2D u_emissiveTexture;
 
     void main() {
-        outColor = texture(u_emissiveTexture, v_texCoord);
+        vec4 finalColor = texture(u_emissiveTexture, v_texCoord);
+        float fogAmount = smoothstep(u_fogNear, u_fogFar, gl_FragCoord.z);
+        outColor = mix(finalColor, u_fogColor, fogAmount);  
     }
 `;
 
