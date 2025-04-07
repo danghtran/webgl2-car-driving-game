@@ -20,10 +20,8 @@ export function Canvas(props) {
     const [showBox, setShowBox] = useState(false);
     const [fogIntensity, setFogIntensity] = useState(1);
     const [fabStore, setFabStore] = useState({});
-    const fuelElement = document.getElementById("fuelText");
 
     const applyTransform = useCallback(() => {
-        var currentFuel = parseInt(fuelElement.textContent.split(":")[1].trim());
         if (scene !== null) {
             for (const [name, node] of Object.entries(scene)) {
                 if (node instanceof RNode) {
@@ -41,12 +39,9 @@ export function Canvas(props) {
                         if (areIntersect(carbb.min, carbb.max, bb.min, bb.max)) {
                             if(name.includes("tank")){
                                 delete scene[name];
-                                if(currentFuel + 5 > 100){
-                                    currentFuel = 100;
-                                } else {
-                                    currentFuel = currentFuel + 5;
+                                if(game.fuel + 5 < 100){
+                                     game.fuel += 5;
                                 }
-                                fuelElement.textContent = `Fuel: ${currentFuel}`;
                             } else {
                                 window.location.reload();
                             }
@@ -101,6 +96,7 @@ export function Canvas(props) {
     useEffect(() => {
         var id;
         var genId;
+        var fuelId;
         if (game !== null && game.play) {
             id = setInterval(() => {
                 requestAnimationFrame(() => {
@@ -119,11 +115,18 @@ export function Canvas(props) {
                     scene[proto.name] = fuel;
                 }
             }, 5000);
+            fuelId = setInterval(() => {
+                game.fuel -= 1;
+                if (game.fuel < 1) {
+                    window.location.reload();
+                }
+            }, 1000);
         }
         
         return () => {
             clearInterval(id);
             clearInterval(genId);
+            clearInterval(fuelId);
         }
     }, [game, scene, fabStore]);
 
@@ -181,7 +184,8 @@ export function Canvas(props) {
         setScence(Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes))
 
         setGame({
-            play: true
+            play: true,
+            fuel: 100
         })
     }
 
@@ -280,27 +284,10 @@ export function Canvas(props) {
         <canvas ref={canvasRef} width={props.width} height={props.height} />
         <div>
             <Button variant="outlined" onClick={onPauseGame}>Stop</Button>
-            <p id="fuelText">Fuel: 100</p>
+            <p id="fuelText">Fuel: {game? game.fuel:0}</p>
             <Switch value={showBox} onChange={onShowBox}></Switch>
             <Slider value={fogIntensity} min={-1} max={1} onChange={onFogIntensity} step={0.2}></Slider>
         </div>
         
     </div>;
 }
-
-window.onload = function () {
-    setInterval(() => {
-        const fuelElement = document.getElementById("fuelText");
-        const currentText = fuelElement.textContent;
-        let currentFuel = parseInt(currentText.split(":")[1].trim());
-
-        if (currentFuel > 0) {
-            currentFuel -= 1;
-            fuelElement.textContent = `Fuel: ${currentFuel}`;
-        }
-
-        if(currentFuel < 1){
-            window.location.reload();
-        }
-    }, 1000);
-};
