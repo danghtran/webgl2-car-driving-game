@@ -10,6 +10,7 @@ import { areIntersect } from './Physic';
 import { Prefab } from './Prefab';
 import {GameMenu, StartUp} from './Menu';
 import FuelBar from './FuelBar';
+import { light } from '@mui/material/styles/createPalette';
 
 export function Canvas(props) {
     const canvasRef = useRef(null);
@@ -95,6 +96,28 @@ export function Canvas(props) {
         }
     }, [scene, mvmt, env]);
 
+    const fogTimeMap = {
+        3: 0.4, 5:0.6, 7: 1, 18:0.5, 19:0.4, 20:0, 21:-0.2, 22:-0.5, 1:0, 2:0.2
+    }
+
+    const lightTimeMap = {
+        3: 0.4, 5: 0.6, 7: 0.8, 17: 0.5, 19: 0.4, 20: 0.2, 21: 0.1, 22: 0 
+    }
+
+    const setFogForTime = (time) => {
+        const fog = fogTimeMap[time];
+        if (fog) {
+            onFogIntensity(fog);
+        }
+    }
+
+    const setLightForTime = (time) => {
+        const ambient = lightTimeMap[time];
+        if (ambient) {
+            env.lights[0].ambient = [ambient, ambient, ambient];
+        }
+    }
+
     useEffect(() => {
         var id, genId, fuelId, dayId;
         if (game !== null && game.play) {
@@ -124,15 +147,8 @@ export function Canvas(props) {
             dayId = setInterval(() => {
                 game.time++;
                 if (game.time > 24) game.time = 0;
-                if (game.time < 3) {
-                    onFogIntensity(0);
-                } else if (game.time <6) {
-                    onFogIntensity(0.5);
-                } else if (game.time > 21) {
-                    onFogIntensity(-0.2);
-                } else if (game.time > 18) {
-                    onFogIntensity(-0.5);
-                }
+                setFogForTime(game.time);
+                setLightForTime(game.time);
             }, 2000);
         }
         
@@ -158,7 +174,7 @@ export function Canvas(props) {
                     color: [1, 1, 1, 1],
                     cutOff: 0,
                     outerCutOff: 0,
-                    ambient: [0.5, 0.5, 0.5],
+                    ambient: [0.8, 0.8, 0.8],
                     specular: [1, 1, 1],
                     diffuse: [1, 1, 1]
                 }
@@ -205,8 +221,6 @@ export function Canvas(props) {
 
         setMvmt({})
     }
-
-
 
     useEffect(() => {
         const canvas = canvasRef.current;
