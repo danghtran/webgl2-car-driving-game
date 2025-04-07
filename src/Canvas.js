@@ -20,8 +20,10 @@ export function Canvas(props) {
     const [showBox, setShowBox] = useState(false);
     const [fogIntensity, setFogIntensity] = useState(1);
     const [fabStore, setFabStore] = useState({});
+    const fuelElement = document.getElementById("fuelText");
 
     const applyTransform = useCallback(() => {
+        var currentFuel = parseInt(fuelElement.textContent.split(":")[1].trim());
         if (scene !== null) {
             for (const [name, node] of Object.entries(scene)) {
                 if (node instanceof RNode) {
@@ -37,7 +39,17 @@ export function Canvas(props) {
                 for (const bb of node.getWorldBoundingBox()) {
                     for (const carbb of carBBs) {
                         if (areIntersect(carbb.min, carbb.max, bb.min, bb.max)) {
-                            delete scene[name];
+                            if(name.includes("tank")){
+                                delete scene[name];
+                                if(currentFuel + 5 > 100){
+                                    currentFuel = 100;
+                                } else {
+                                    currentFuel = currentFuel + 5;
+                                }
+                                fuelElement.textContent = `Fuel: ${currentFuel}`;
+                            } else {
+                                window.location.reload();
+                            }
                         }
                     }
                 }
@@ -256,9 +268,27 @@ export function Canvas(props) {
         <canvas ref={canvasRef} width={props.width} height={props.height} />
         <div>
             <Button variant="outlined" onClick={onPauseGame}>Stop</Button>
+            <p id="fuelText">Fuel: 100</p>
             <Switch value={showBox} onChange={onShowBox}></Switch>
             <Slider value={fogIntensity} min={-1} max={1} onChange={onFogIntensity} step={0.2}></Slider>
         </div>
         
     </div>;
 }
+
+window.onload = function () {
+    setInterval(() => {
+        const fuelElement = document.getElementById("fuelText");
+        const currentText = fuelElement.textContent;
+        let currentFuel = parseInt(currentText.split(":")[1].trim());
+
+        if (currentFuel > 0) {
+            currentFuel -= 1;
+            fuelElement.textContent = `Fuel: ${currentFuel}`;
+        }
+
+        if(currentFuel < 1){
+            window.location.reload();
+        }
+    }, 1000);
+};
