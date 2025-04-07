@@ -6,7 +6,7 @@ function App() {
 
   return (
     <div className="App">
-        <Canvas width={1080} height={540}/>
+        <Canvas width={"100vw"} height={"100vh"}/>
     </div>
   );
 }

@@ -8,6 +8,8 @@ import { Car, CNode, PNode, RNode, SkyNode } from './Object';
 import { Button, Slider, Switch } from '@mui/material';
 import { areIntersect } from './Physic';
 import { Prefab } from './Prefab';
+import GameMenu from './Menu';
+import FuelBar from './FuelBar';
 
 export function Canvas(props) {
     const canvasRef = useRef(null);
@@ -258,6 +260,21 @@ export function Canvas(props) {
         }
     }, [handleKeydownEvent]);
 
+    const resizeCanvas = useCallback(() => {
+        const canvas = canvasRef.current;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      
+        // Tell WebGL the new viewport size
+        const gl = glRef.current;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+    }, [])
+      
+
+    useEffect(()=> {
+        window.addEventListener("resize", resizeCanvas);   
+    }, [resizeCanvas])
+
     const onPauseGame = () => {
         setGame({
             ...game,
@@ -265,11 +282,11 @@ export function Canvas(props) {
         })
     }
 
-    const onShowBox = (e, newValue) => {
+    const onShowBox = (newValue) => {
         setShowBox(newValue);
     }
 
-    const onFogIntensity = (e, newValue) => {
+    const onFogIntensity = (newValue) => {
         setFogIntensity(newValue);
         setEnv({
             ...env,
@@ -281,12 +298,11 @@ export function Canvas(props) {
     }
 
     return <div>
-        <canvas ref={canvasRef} width={props.width} height={props.height} />
+        <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight} />
         <div>
-            <Button variant="outlined" onClick={onPauseGame}>Stop</Button>
-            <p id="fuelText">Fuel: {game? game.fuel:0}</p>
-            <Switch value={showBox} onChange={onShowBox}></Switch>
-            <Slider value={fogIntensity} min={-1} max={1} onChange={onFogIntensity} step={0.2}></Slider>
+            <GameMenu onPause={onPauseGame} onFogChange={onFogIntensity} onToggleBox={onShowBox} fogValue={fogIntensity}/>
+            <FuelBar fuel={game? game.fuel:0}/>
+           
         </div>
         
     </div>;
