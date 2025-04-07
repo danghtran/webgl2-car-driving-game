@@ -9,6 +9,8 @@ import { Button, Slider, Switch } from '@mui/material';
 import { areIntersect } from './Physic';
 import { Prefab } from './Prefab';
 
+var paused = false;
+
 export function Canvas(props) {
     const canvasRef = useRef(null);
     const glRef = useRef(null);
@@ -243,6 +245,7 @@ export function Canvas(props) {
     }, [handleKeydownEvent]);
 
     const onPauseGame = () => {
+        paused = !paused;
         setGame({
             ...game,
             play: !game.play
@@ -267,10 +270,12 @@ export function Canvas(props) {
     return <div>
         <canvas ref={canvasRef} width={props.width} height={props.height} />
         <div>
-            <Button variant="outlined" onClick={onPauseGame}>Stop</Button>
             <p id="fuelText">Fuel: 100</p>
-            <Switch value={showBox} onChange={onShowBox}></Switch>
-            <Slider value={fogIntensity} min={-1} max={1} onChange={onFogIntensity} step={0.2}></Slider>
+            <Button id="pause_game" variant="outlined" onClick={onPauseGame}>Stop</Button>
+            <br></br>
+            <label for="box">Draw collision box</label>
+            <Switch id="box" value={showBox} onChange={onShowBox}></Switch>
+            <Slider id="fog" value={fogIntensity} min={-1} max={1} onChange={onFogIntensity} step={0.2}></Slider>
         </div>
         
     </div>;
@@ -281,10 +286,13 @@ window.onload = function () {
         const fuelElement = document.getElementById("fuelText");
         const currentText = fuelElement.textContent;
         let currentFuel = parseInt(currentText.split(":")[1].trim());
+        console.log(paused);
 
-        if (currentFuel > 0) {
-            currentFuel -= 1;
-            fuelElement.textContent = `Fuel: ${currentFuel}`;
+        if (!paused){
+            if (currentFuel > 0) {
+                currentFuel -= 1;
+                fuelElement.textContent = `Fuel: ${currentFuel}`;
+            }
         }
 
         if(currentFuel < 1){
