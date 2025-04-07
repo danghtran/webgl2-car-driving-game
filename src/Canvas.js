@@ -8,7 +8,7 @@ import { Car, CNode, PNode, RNode, SkyNode } from './Object';
 import { Button, Slider, Switch } from '@mui/material';
 import { areIntersect } from './Physic';
 import { Prefab } from './Prefab';
-import GameMenu from './Menu';
+import {GameMenu, StartUp} from './Menu';
 import FuelBar from './FuelBar';
 
 export function Canvas(props) {
@@ -96,9 +96,7 @@ export function Canvas(props) {
     }, [scene, mvmt, env]);
 
     useEffect(() => {
-        var id;
-        var genId;
-        var fuelId;
+        var id, genId, fuelId, dayId;
         if (game !== null && game.play) {
             id = setInterval(() => {
                 requestAnimationFrame(() => {
@@ -123,14 +121,28 @@ export function Canvas(props) {
                     window.location.reload();
                 }
             }, 1000);
+            dayId = setInterval(() => {
+                game.time++;
+                if (game.time > 24) game.time = 0;
+                if (game.time < 3) {
+                    onFogIntensity(0);
+                } else if (game.time <6) {
+                    onFogIntensity(0.5);
+                } else if (game.time > 21) {
+                    onFogIntensity(-0.2);
+                } else if (game.time > 18) {
+                    onFogIntensity(-0.5);
+                }
+            }, 2000);
         }
         
         return () => {
             clearInterval(id);
             clearInterval(genId);
             clearInterval(fuelId);
+            clearInterval(dayId);
         }
-    }, [game, scene, fabStore]);
+    }, [game, scene, fabStore, fogIntensity]);
 
     const loadEnv = () => {
         setEnv({
@@ -186,9 +198,12 @@ export function Canvas(props) {
         setScence(Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes))
 
         setGame({
-            play: true,
-            fuel: 100
+            play: false,
+            fuel: 100,
+            time: 8
         })
+
+        setMvmt({})
     }
 
 
@@ -297,12 +312,19 @@ export function Canvas(props) {
         })
     }
 
+    const onStartGame = ()=> {
+        setGame({
+            ...game,
+            play: true
+        })
+    }
+
     return <div>
         <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight} />
         <div>
-            <GameMenu onPause={onPauseGame} onFogChange={onFogIntensity} onToggleBox={onShowBox} fogValue={fogIntensity}/>
+            <GameMenu onPause={onPauseGame} onFogChange={onFogIntensity} onToggleBox={onShowBox} fogValue={fogIntensity} gameTime={game?game.time:0}/>
             <FuelBar fuel={game? game.fuel:0}/>
-           
+            <StartUp onStart={onStartGame}/>
         </div>
         
     </div>;
