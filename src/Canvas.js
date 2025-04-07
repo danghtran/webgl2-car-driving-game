@@ -67,6 +67,8 @@ export function Canvas(props) {
             gl.enable(gl.DEPTH_TEST);
             gl.enable(gl.CULL_FACE);
             
+            // const carLights = scene['ToyCar'].getLights();
+            // env.lights[1] = carLights[0];
             gl.useProgram(program);
             for (const [name, node] of Object.entries(scene)) {
                 if (node instanceof RNode) {
@@ -115,13 +117,23 @@ export function Canvas(props) {
 
     const loadEnv = () => {
         setEnv({
-            light: normalize([-1, 3, 5]),
             fog: {
                 color: [0.4, 0.4, 0.4, 1],
                 near: 1,
                 far: 1.5
             },
-            ambient: [0.5, 0.5, 0.5]
+            lights: [
+                {
+                    position: [0, 0, 0, 1],
+                    direction: [0, 0, -1],
+                    color: [1, 1, 1, 1],
+                    cutOff: 0,
+                    outerCutOff: 0,
+                    ambient: [0.5, 0.5, 0.5],
+                    specular: [1, 1, 1],
+                    diffuse: [1, 1, 1]
+                }
+            ]
         })
     }
 

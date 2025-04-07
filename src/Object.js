@@ -1,6 +1,6 @@
-import { im, inverse, mat4mult, mat4multp, multmat4l } from "./Matrix";
-import { fromQuaternion, nonUniformScale, perspective, quaternionRotation, toQuaternion, translation } from "./Modeling";
-import { getBoundingBoxVertices } from "./Physic";
+import { im, inverse, mat4mult, mat4multp, multmat4l, toVec3 } from "./Matrix";
+import { fromQuaternion, nonUniformScale, perspective, quaternionRotation, radians, toQuaternion, translation } from "./Modeling";
+import { center, getBoundingBoxVertices } from "./Physic";
 
 class INode {
     constructor(other) {
@@ -8,21 +8,27 @@ class INode {
             this.transMat = other.transMat;
             this.rotMat = other.rotMat;
             this.scaleMat = other.scaleMat;
+            this.viewMat = other.viewMat;
         } else {
             this.transMat = im();
             this.rotMat = im();
             this.scaleMat = im();
+            this.viewMat = im();
         }
+        this.outdated = false;
     }
 
     rotate(rot) {
         this.rotMat = mat4mult(rot, this.rotMat);
+        this.outdated = true;
     }
     scale(scale) {
         this.scaleMat = mat4mult(scale, this.scaleMat);
+        this.outdated = true;
     }
     translate(trans) {
         this.transMat = mat4mult(trans, this.transMat);
+        this.outdated = true;
     }
     applyMvmt(mvmt) {
         if (mvmt === undefined) return;
@@ -56,7 +62,11 @@ export class RNode extends INode {
     }
 
     getWorldMatrix() {
-        return multmat4l([this.parentMat, this.transMat, this.rotMat, this.scaleMat]);
+        if (this.outdated) {
+            this.viewMat = multmat4l([this.parentMat, this.transMat, this.rotMat, this.scaleMat]);
+            this.outdated = false;
+        }
+        return this.viewMat;
     }
 
     render(gl, program, projection, view, env) {
@@ -69,10 +79,6 @@ export class RNode extends INode {
         gl.uniformMatrix4fv(uView, false, view);
         var uWorld = gl.getUniformLocation(program, "u_world");
         gl.uniformMatrix4fv(uWorld, false, this.getWorldMatrix());
-        var uLight = gl.getUniformLocation(program, "u_lightDirection");
-        gl.uniform3fv(uLight, env.light);
-        const uAmbientColor = gl.getUniformLocation(program, "u_ambientColor");
-        gl.uniform3fv(uAmbientColor, env.ambient);
         const uFogColor = gl.getUniformLocation(program, "u_fogColor");
         gl.uniform4fv(uFogColor, env.fog.color);
         const uFogNear = gl.getUniformLocation(program, "u_fogNear");
@@ -103,6 +109,37 @@ export class RNode extends INode {
         gl.activeTexture(gl.TEXTURE3);
         gl.bindTexture(gl.TEXTURE_2D, primitive.material["normalTexture"]);
         gl.uniform1i(uNormalTexture, 3);
+
+        const lights = env.lights;
+        for (let i = 0; i<lights.length; i++) {
+            var ambientP = gl.getUniformLocation(program, `u_lights[${i}].ambient`);
+            gl.uniform3fv(ambientP, lights[i].ambient);
+            var diffuseP = gl.getUniformLocation(program, `u_lights[${i}].diffuse`);
+            gl.uniform3fv(diffuseP, lights[i].diffuse);
+            var specularP = gl.getUniformLocation(program, `u_lights[${i}].specular`);
+            gl.uniform3fv(specularP, lights[i].specular);
+            var color = gl.getUniformLocation(program, `u_lights[${i}].color`);
+            gl.uniform4fv(color, lights[i].color);
+            var pos = gl.getUniformLocation(program, `u_lights[${i}].position`);
+            gl.uniform4fv(pos, lights[i].position);
+            var dir = gl.getUniformLocation(program, `u_lights[${i}].direction`);
+            gl.uniform3fv(dir, lights[i].direction);
+            var cutoff = gl.getUniformLocation(program, `u_lights[${i}].cutOff`);
+            gl.uniform1f(cutoff, lights[i].cutOff);
+            var smoothEdge = gl.getUniformLocation(program, `u_lights[${i}].outerCutOff`);
+            gl.uniform1f(smoothEdge, lights[i].outerCutOff);
+            // var lconstant = gl.getUniformLocation(program, `vLights[${i}].constant`);
+            // gl.uniform1f(lconstant, lights[i].c);
+            // var llinear = gl.getUniformLocation(program, `vLights[${i}].linear`);
+            // gl.uniform1f(llinear, lights[i].l);
+            // var lquad = gl.getUniformLocation(program, `vLights[${i}].quad`);
+            // gl.uniform1f(lquad, lights[i].q);
+        }
+        var lightPos = gl.getUniformLocation(program, "u_lightPos");
+        gl.uniform4fv(lightPos, lights.flatMap(l => l.position));
+        var numLight = gl.getUniformLocation(program, "u_numLight");
+        gl.uniform1i(numLight, lights.length);
+
         gl.drawElements(gl.TRIANGLES, primitive.numElements, primitive.indexType, 0);
         gl.bindVertexArray(null);
       }
@@ -180,6 +217,7 @@ export class Car extends PNode { //INode
         this.currentZDegree = 0;
         this.currentXDegree = 0;
         this.pivotRotMat = im();
+        this.facing = [0, 0, -1, 1];
     }
 
     static mvmtSet = {
@@ -213,6 +251,11 @@ export class Car extends PNode { //INode
         return this.mvmtSet[key];
     }
 
+    rotate(rot) {
+        super.rotate(rot);
+        this.facing = mat4multp(rot, this.facing);
+    }
+
     applyMvmt(mvmt) {
         if (mvmt === undefined) return;
         if (mvmt.translate) {
@@ -242,10 +285,15 @@ export class Car extends PNode { //INode
 
     rotatePivot(rot) {
         this.pivotRotMat = mat4mult(rot, this.pivotRotMat);
+        this.outdated = true;
     }
 
     getWorldMatrix() {
-        return multmat4l([this.parentMat, this.pivotRotMat, this.transMat, this.rotMat, this.scaleMat]);
+        if (this.outdated) {
+            this.viewMat = multmat4l([this.parentMat, this.pivotRotMat, this.transMat, this.rotMat, this.scaleMat]);
+            this.outdated = false;
+        }
+        return this.viewMat;
     }
 
     getAutoMvmt() {
@@ -271,6 +319,23 @@ export class Car extends PNode { //INode
             rotate: rotate,
             translate: translate
         }
+    }
+
+    getLights(){
+        const bb = this.primitives[0].boundingBox;
+        const c = center(bb.min, bb.max);
+        return [
+            {
+                position: mat4multp(this.getWorldMatrix(), [c[0], c[1], c[2], 1]),
+                direction: toVec3(this.facing),
+                color: [1, 0, 0, 1],
+                cutOff: Math.cos(radians(3)),
+                outerCutOff: Math.cos(radians(12)),
+                ambient: [1, 1, 1],
+                specular: [1, 1, 1],
+                diffuse: [0, 0, 0]
+            }
+        ]
     }
 }
   

@@ -1,4 +1,4 @@
-import { normalize, vector } from "./Matrix";
+import { applyOp, normalize, vector } from "./Matrix";
 
 const calculateBoundingBox = (data) => {
     const min = [Infinity, Infinity, Infinity];
@@ -43,8 +43,13 @@ const areIntersect = (min1, max1, min2, max2) => {
     min1[2] <= max2[2] && max1[2] >= min2[2]; 
 }
 
+const center = (min, max) => {
+    return applyOp(min, max, (u, v) => (u + v)/2);
+}
+
 export {
     calculateBoundingBox,
     getBoundingBoxVertices,
-    areIntersect
+    areIntersect,
+    center
 }
