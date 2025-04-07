@@ -3,10 +3,11 @@ import { skinVS, fs, skyboxVs, skyboxFs, bbVs, bbFs } from './Shader';
 import { loadGLTF } from './gltfLoader';
 import { createProgram, createShader } from './WebglHelper';
 import { nonUniformScale, ortho, perspective, quaternionRotation, toQuaternion, translation } from './Modeling';
-import { mat4mult, normalize } from './Matrix';
+import { mat4mult, normalize, randomFloat } from './Matrix';
 import { Car, CNode, PNode, RNode, SkyNode } from './Object';
 import { Button, Slider, Switch } from '@mui/material';
 import { areIntersect } from './Physic';
+import { Prefab } from './Prefab';
 
 export function Canvas(props) {
     const canvasRef = useRef(null);
@@ -18,6 +19,7 @@ export function Canvas(props) {
     const [game, setGame] = useState(null);
     const [showBox, setShowBox] = useState(false);
     const [fogIntensity, setFogIntensity] = useState(1);
+    const [fabStore, setFabStore] = useState({});
 
     const applyTransform = useCallback(() => {
         if (scene !== null) {
@@ -28,14 +30,15 @@ export function Canvas(props) {
             }
             //
             var carBBs = scene['ToyCar'].getWorldBoundingBox();
-            var otherBBs = Object.entries(scene)
+            var collidableNodes = Object.entries(scene)
                             .filter(([k, v]) => v instanceof PNode)
                             .filter(([k, v]) => k !== 'ToyCar')
-                            .flatMap(([k, v]) => v.getWorldBoundingBox());
-            for (const bb of otherBBs) {
-                for (const carbb of carBBs) {
-                    if (areIntersect(carbb.min, carbb.max, bb.min, bb.max)) {
-                        console.log('Collided')
+            for (const [name, node] of collidableNodes) {
+                for (const bb of node.getWorldBoundingBox()) {
+                    for (const carbb of carBBs) {
+                        if (areIntersect(carbb.min, carbb.max, bb.min, bb.max)) {
+                            delete scene[name];
+                        }
                     }
                 }
             }
@@ -83,23 +86,32 @@ export function Canvas(props) {
 
     useEffect(() => {
         var id;
+        var genId;
         if (game !== null && game.play) {
             id = setInterval(() => {
                 requestAnimationFrame(() => {
                     
                     setMvmt({
                         'Camera': CNode.getAutoMvmt(),
-                        'ToyCar': Car.getAutoMvmt()
+                        'ToyCar': scene['ToyCar'].getAutoMvmt()
                     });
                 })
             }, 100);
-        
+            genId = setInterval(() => {
+                const proto = fabStore['tank'].getPrefabInstance();
+                const fuel = new PNode(proto.proto);
+                fuel.translate(translation([randomFloat(-3, 3), randomFloat(-3.5, -4.5), randomFloat(0.8, 1.5)]))
+                if (fuel) {
+                    scene[proto.name] = fuel;
+                }
+            }, 5000);
         }
         
         return () => {
             clearInterval(id);
+            clearInterval(genId);
         }
-    }, [game, scene]);
+    }, [game, scene, fabStore]);
 
     const loadEnv = () => {
         setEnv({
@@ -108,7 +120,8 @@ export function Canvas(props) {
                 color: [0.4, 0.4, 0.4, 1],
                 near: 1,
                 far: 1.5
-            }
+            },
+            ambient: [0.5, 0.5, 0.5]
         })
     }
 
@@ -130,6 +143,10 @@ export function Canvas(props) {
         toycar.nodes['ToyCar'].translate(translation([-4.1, 0.5, -0.2]))
         toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 1, 0], 90))
         toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 0, 1], -90))
+
+        var fuel = await loadGLTF(gl, program, "fuel.gltf", "/fuel/");
+        fuel.nodes['tank'].scale(nonUniformScale([0.5, 0.5, 0.5]))
+        fabStore['tank'] = new Prefab('tank', fuel.nodes['tank'])
 
         var t = await loadGLTF(gl, program, "Low_Poly_Forest.gltf", "/scene/");
 

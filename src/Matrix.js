@@ -253,6 +253,10 @@ const vector = (p1, p2) => {
     return res;
 }
 
+function randomFloat(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
 
 export {
     im,
@@ -268,5 +272,6 @@ export {
     dot,
     compose,
     inverse,
-    vector
+    vector,
+    randomFloat
 };

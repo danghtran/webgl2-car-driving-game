@@ -71,9 +71,8 @@ export class RNode extends INode {
         gl.uniformMatrix4fv(uWorld, false, this.getWorldMatrix());
         var uLight = gl.getUniformLocation(program, "u_lightDirection");
         gl.uniform3fv(uLight, env.light);
-        const ambientColor = [0.5, 0.5, 0.5];
         const uAmbientColor = gl.getUniformLocation(program, "u_ambientColor");
-        gl.uniform3fv(uAmbientColor, ambientColor);
+        gl.uniform3fv(uAmbientColor, env.ambient);
         const uFogColor = gl.getUniformLocation(program, "u_fogColor");
         gl.uniform4fv(uFogColor, env.fog.color);
         const uFogNear = gl.getUniformLocation(program, "u_fogNear");
@@ -179,6 +178,7 @@ export class Car extends PNode { //INode
     constructor(pnode) {
         super(pnode);
         this.currentZDegree = 0;
+        this.currentXDegree = 0;
         this.pivotRotMat = im();
     }
 
@@ -192,16 +192,14 @@ export class Car extends PNode { //INode
         "a": {
             rotate: {
                 axis: [0, 0, 1],
-                degree: 1
-            },
-            translate: [0, 0.1, 0]
+                degree: -5
+            }
         },
         "d": {
             rotate: {
                 axis: [0, 0, 1],
-                degree: 1
-            },
-            translate: [0, -0.1, 0]
+                degree: 5
+            }
         },
         "s": {
             rotate: {
@@ -223,20 +221,23 @@ export class Car extends PNode { //INode
         if (mvmt.rotate) {
             if (mvmt.rotate.pivot) {
                 this.rotatePivot(quaternionRotation(mvmt.rotate.axis, mvmt.rotate.degree));
-            } else {
-                if (mvmt.rotate.axis[0] === 1 && 
-                    this.currentZDegree + mvmt.rotate.degree < 45 &&
-                    this.currentZDegree + mvmt.rotate.degree > -45
-                ) {
-                    this.currentZDegree += mvmt.rotate.degree
-                    this.rotate(quaternionRotation(mvmt.rotate.axis, mvmt.rotate.degree))
+            } else if (mvmt.rotate.axis[0] === 1) {
+                if (this.currentZDegree + mvmt.rotate.degree < 45 && this.currentZDegree + mvmt.rotate.degree > -45) {
+                    this.currentZDegree += mvmt.rotate.degree;
+                    this.rotate(quaternionRotation(mvmt.rotate.axis, mvmt.rotate.degree));
                 }
+            } else if (mvmt.rotate.axis[2] === 1) {
+                if (this.currentXDegree + mvmt.rotate.degree < 45 && this.currentXDegree + mvmt.rotate.degree > -45) {
+                    this.currentXDegree += mvmt.rotate.degree;
+                    this.rotate(quaternionRotation(mvmt.rotate.axis, mvmt.rotate.degree));
+                }
+            } else {
+                this.rotate(quaternionRotation(mvmt.rotate.axis, mvmt.rotate.degree));
             }
         }
         if (mvmt.scale) {
             this.scale(nonUniformScale(mvmt.scale));
         }
-        //this.updateBoundingBox();
     }
 
     rotatePivot(rot) {
@@ -247,13 +248,28 @@ export class Car extends PNode { //INode
         return multmat4l([this.parentMat, this.pivotRotMat, this.transMat, this.rotMat, this.scaleMat]);
     }
 
-    static getAutoMvmt() {
+    getAutoMvmt() {
+        var rotate = {
+            pivot: true,
+            axis: [0, 0, 1],
+            degree: 1
+        };
+        var translate;
+        if (this.currentZDegree > 0.1) {
+            translate = [0, 0, -0.02];
+        } else if (this.currentZDegree < -0.1) {
+            translate = [0, 0, 0.02];
+        }
+        if (this.currentXDegree > 20) {
+            if (translate) translate[0] = -0.02;
+            else translate = [0.006, 0, 0];
+        } else if (this.currentXDegree < -20) {
+            if (translate) translate[0] = 0.02;
+            else translate = [-0.006, 0, 0];
+        }
         return {
-            rotate: {
-                pivot: true,
-                axis: [0, 0, 1],
-                degree: 1
-            }
+            rotate: rotate,
+            translate: translate
         }
     }
 }
