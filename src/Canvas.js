@@ -22,6 +22,7 @@ export function Canvas(props) {
     const [showBox, setShowBox] = useState(false);
     const [fogIntensity, setFogIntensity] = useState(1);
     const [fabStore, setFabStore] = useState({});
+    const [car, setCar] = useState('car0');
 
     const applyTransform = useCallback(() => {
         if (scene !== null) {
@@ -225,6 +226,14 @@ export function Canvas(props) {
         toycar.nodes['ToyCar'].translate(translation([-4.1, 0.5, -0.2]))
         toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 1, 0], 90))
         toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 0, 1], -90))
+        fabStore['car0'] = new Prefab('car0', toycar.nodes['ToyCar'])
+
+        var toycar2 = await loadGLTF(gl,program, "retrocar.gltf", "/retro/");
+        for (const name in toycar2.nodes) toycar2.nodes[name] = new Car(toycar2.nodes[name]);
+        toycar2.nodes['ToyCar'].translate(translation([-4.1, 0.5, 1]))
+        toycar2.nodes['ToyCar'].rotate(quaternionRotation([0, 1, 0], 90))
+        toycar2.nodes['ToyCar'].rotate(quaternionRotation([0, 0, 1], 90))
+        fabStore['car1'] = new Prefab('car1', toycar2.nodes['ToyCar'])
 
         var fuel = await loadGLTF(gl, program, "fuel.gltf", "/fuel/");
         fuel.nodes['tank'].scale(nonUniformScale([0.5, 0.5, 0.5]))
@@ -239,7 +248,7 @@ export function Canvas(props) {
         var sk = await loadGLTF(gl, program, "skybox.gltf", "/skybox/");
         for (const name in sk.nodes) sk.nodes[name] = new SkyNode(sk.nodes[name]);
 
-        var sc = Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes);
+        var sc = Object.assign({}, allnodes, t.nodes, toycar2.nodes, sk.nodes);
         const grouped = Object.entries(sc).filter(([k,v]) => v instanceof RNode).reduce((acc, [key, value]) => {
             const mesh = value.mesh;
             if (!acc[mesh]) acc[mesh] = {};
