@@ -4,6 +4,8 @@ import { createDefaultTexture } from "./WebglHelper";
 import { CNode, PNode, RNode } from "./Object";
 import { calculateBoundingBox } from "./Physic";
 
+const meshStorage = {};
+
 const loadFile = async (url, type) => {
     const response = await fetch(url);
     if (!response.ok) {
@@ -100,40 +102,48 @@ const createCNode = (gl, gltf, node) => {
 const initiateRNodeWithVaoAndMaterial = async (gl, program, gltf, node) => {
   var mesh = gltf.meshes[node.mesh];
   var rnode =  mesh.physic? new PNode() : new RNode();
-  for (const primitive of mesh.primitives) {
-    var vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-    var boundingBox;
-    for (const [attribName, index] of Object.entries(primitive.attributes)) {
-      const includeBB = mesh.physic && attribName === 'POSITION';
-      const attribData = getAccessorAndWebGLBuffer(gl, gltf, index, includeBB);
-      if (!boundingBox) {
-        boundingBox = attribData.boundingBox;
+  var loadedMesh = meshStorage[mesh.name];
+  if (!loadedMesh) {
+    var newMesh = {
+      primitives: []
+    };
+    for (const primitive of mesh.primitives) {
+      var vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      var boundingBox;
+      for (const [attribName, index] of Object.entries(primitive.attributes)) {
+        const includeBB = mesh.physic && attribName === 'POSITION';
+        const attribData = getAccessorAndWebGLBuffer(gl, gltf, index, includeBB);
+        if (!boundingBox) {
+          boundingBox = attribData.boundingBox;
+        }
+        var vName = `a_${attribName}`;
+        var loc = gl.getAttribLocation(program, vName);
+        // console.log(vName);
+        // console.log(loc);
+        if (attribData.type === 5123) {
+          gl.vertexAttribIPointer(loc, attribData.numComponents, attribData.type, false, 0, 0);
+        } else {
+          gl.vertexAttribPointer(loc, attribData.numComponents, attribData.type, false, 0, 0);
+        }
+        gl.enableVertexAttribArray(loc);
       }
-      var vName = `a_${attribName}`;
-      var loc = gl.getAttribLocation(program, vName);
-      // console.log(vName);
-      // console.log(loc);
-      if (attribData.type === 5123) {
-        gl.vertexAttribIPointer(loc, attribData.numComponents, attribData.type, false, 0, 0);
-      } else {
-        gl.vertexAttribPointer(loc, attribData.numComponents, attribData.type, false, 0, 0);
-      }
-      gl.enableVertexAttribArray(loc);
-    }
-
-    const idxData = getAccessorAndWebGLBuffer(gl, gltf, primitive.indices);
-
-    var material = await handleMaterial(gl, gltf, primitive.material);
-    rnode.addPrimitive({
-      vao: vao, 
-      numElements: idxData.numElements, 
-      material: material, 
-      indexType: idxData.type, 
-      boundingBox: boundingBox
-    });
-    gl.bindVertexArray(null);
-  } 
+  
+      const idxData = getAccessorAndWebGLBuffer(gl, gltf, primitive.indices);
+  
+      var material = await handleMaterial(gl, gltf, primitive.material);
+      newMesh.primitives.push({
+        vao: vao, 
+        numElements: idxData.numElements, 
+        material: material, 
+        indexType: idxData.type, 
+        boundingBox: boundingBox
+      });
+      gl.bindVertexArray(null);
+    } 
+    meshStorage[mesh.name] = newMesh;
+  }
+  rnode.mesh = mesh.name;
   return rnode;
 }
 
@@ -289,5 +299,6 @@ const loadGLTF = async (gl, program, url, prefix) => {
 }
 
 export {
-    loadGLTF
+  meshStorage,
+  loadGLTF
 }
