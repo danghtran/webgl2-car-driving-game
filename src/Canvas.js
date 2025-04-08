@@ -42,7 +42,11 @@ export function Canvas(props) {
                     for (const carbb of carBBs) {
                         if (areIntersect(carbb.min, carbb.max, bb.min, bb.max)) {
                             if(name.includes("tank")){
-                                delete scene[name];
+                                if (scene[name]) {
+                                    const meshName = scene[name].mesh;
+                                    delete meshGroup[meshName][name];
+                                    delete scene[name];
+                                }
                                 if(game.fuel + 5 < 100){
                                      game.fuel += 5;
                                 }
@@ -80,16 +84,16 @@ export function Canvas(props) {
             
             // const carLights = scene['ToyCar'].getLights();
             // env.lights[1] = carLights[0];
-            // gl.useProgram(program);
-            // for (const [meshName, rnodes] of Object.entries(meshGroup)) {
-            //     const worldMatrices = rnodes.map(n => n.getWorldMatrix());
-            //     RNode.render(gl, program, cam.projectionMatrix, viewMatrix, env, meshName, worldMatrices);
-            // }
-            for (const [name, node] of Object.entries(scene)) {
-                if (node instanceof RNode) {
-                    node.render(gl, program, cam.projectionMatrix, viewMatrix, env);
-                }
+            gl.useProgram(program);
+            for (const [meshName, rnodes] of Object.entries(meshGroup)) {
+                const worldMatrices = Object.values(rnodes).map(n => n.getWorldMatrix());
+                RNode.render(gl, program, cam.projectionMatrix, viewMatrix, env, meshName, worldMatrices);
             }
+            // for (const [name, node] of Object.entries(scene)) {
+            //     if (node instanceof RNode) {
+            //         node.render(gl, program, cam.projectionMatrix, viewMatrix, env);
+            //     }
+            // }
             if (showBox) {
                 program = proRef.current.boundingBox;
                 for (const [name, node] of Object.entries(scene)) {
@@ -99,7 +103,7 @@ export function Canvas(props) {
                 }
             }
         }
-    }, [scene, mvmt, env]);
+    }, [scene, mvmt, env, meshGroup]);
 
     const fogTimeMap = {
         3: 0.4, 5:0.6, 7: 1, 18:0.5, 19:0.4, 20:0, 21:-0.2, 22:-0.5, 1:0, 2:0.2
@@ -142,6 +146,8 @@ export function Canvas(props) {
                 fuel.translate(translation([randomFloat(-3, 3), randomFloat(-3.5, -4.5), randomFloat(0.8, 1.5)]))
                 if (fuel) {
                     scene[proto.name] = fuel;
+                    if(!meshGroup[fuel.mesh]) meshGroup[fuel.mesh] = {}
+                    meshGroup[fuel.mesh][proto.name] = fuel;
                 }
             }, 5000);
             fuelId = setInterval(() => {
@@ -220,7 +226,8 @@ export function Canvas(props) {
         var sc = Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes);
         const grouped = Object.entries(sc).filter(([k,v]) => v instanceof RNode).reduce((acc, [key, value]) => {
             const mesh = value.mesh;
-            (acc[mesh] ||= []).push(value);
+            if (!acc[mesh]) acc[mesh] = {};
+            acc[mesh][key] = value;
             return acc;
         }, {});
         console.log(grouped);

@@ -66,28 +66,28 @@ export class RNode extends INode {
         return this.viewMat;
     }
 
-    render(gl, program, projection, view, env) {
+    static render(gl, program, projection, view, env, meshName, worldMatrices) {
       gl.useProgram(program);
-      const storedMesh = meshStorage[this.mesh];
+      const storedMesh = meshStorage[meshName];
       for (const primitive of storedMesh.primitives) {
         gl.bindVertexArray(primitive.vao);
-        // const wmBuffer = gl.createBuffer();
-        // gl.bindBuffer(gl.ARRAY_BUFFER, wmBuffer);
-        // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(worldMatrices.flat()), gl.STATIC_DRAW);
-        // const wmLoc = gl.getAttribLocation(program, "a_WORLD_0");
-        // for (let i=0; i<4; i++) {
-        //     const loc = wmLoc + i;
-        //     gl.enableVertexAttribArray(loc);
-        //     gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 64, i * 16);
-        //     gl.vertexAttribDivisor(loc, 1);
-        // }
+        const wmBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, wmBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(worldMatrices.flat()), gl.STATIC_DRAW);
+        const wmLoc = gl.getAttribLocation(program, "a_WORLD_0");
+        for (let i=0; i<4; i++) {
+            const loc = wmLoc + i;
+            gl.enableVertexAttribArray(loc);
+            gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 64, i * 16);
+            gl.vertexAttribDivisor(loc, 1);
+        }
 
         var uProj = gl.getUniformLocation(program, "u_projection");
         gl.uniformMatrix4fv(uProj, false, projection);
         var uView = gl.getUniformLocation(program, "u_view");
         gl.uniformMatrix4fv(uView, false, view);
-        var uWorld = gl.getUniformLocation(program, "u_world");
-        gl.uniformMatrix4fv(uWorld, false, this.getWorldMatrix());
+        // var uWorld = gl.getUniformLocation(program, "u_world");
+        // gl.uniformMatrix4fv(uWorld, false, this.getWorldMatrix());
         const uFogColor = gl.getUniformLocation(program, "u_fogColor");
         gl.uniform4fv(uFogColor, env.fog.color);
         const uFogNear = gl.getUniformLocation(program, "u_fogNear");
@@ -143,7 +143,7 @@ export class RNode extends INode {
         var numLight = gl.getUniformLocation(program, "u_numLight");
         gl.uniform1i(numLight, lights.length);
 
-        gl.drawElements(gl.TRIANGLES, primitive.numElements, primitive.indexType, 0);
+        gl.drawElementsInstanced(gl.TRIANGLES, primitive.numElements, primitive.indexType, 0, worldMatrices.length);
         gl.bindVertexArray(null);
       }
     }
