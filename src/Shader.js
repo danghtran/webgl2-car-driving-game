@@ -2,6 +2,10 @@ const skinVS = `#version 300 es
     in vec4 a_POSITION;
     in vec3 a_NORMAL;
     in vec2 a_TEXCOORD_0;
+    // in vec4 a_WORLD_0;
+    // in vec4 a_WORLD_1;
+    // in vec4 a_WORLD_2;
+    // in vec4 a_WORLD_3;
 
     uniform mat4 u_projection;
     uniform mat4 u_view;
@@ -13,6 +17,9 @@ const skinVS = `#version 300 es
 
     void main() {
         v_texCoord = a_TEXCOORD_0;
+        // mat4 world = mat4(
+        //     a_WORLD_0, a_WORLD_1, a_WORLD_2, a_WORLD_3
+        // );
         mat4 mvp = u_projection * u_view * u_world;
         gl_Position =  mvp * a_POSITION;
         v_normal = mat3(u_world) * a_NORMAL;

@@ -17,6 +17,7 @@ export function Canvas(props) {
     const glRef = useRef(null);
     const proRef = useRef(null);
     const [scene, setScence] = useState(null);
+    const [meshGroup, setMeshGroup] = useState(null);
     const [env, setEnv] = useState(null);
     const [mvmt, setMvmt] = useState(null);
     const [game, setGame] = useState(null);
@@ -79,7 +80,11 @@ export function Canvas(props) {
             
             // const carLights = scene['ToyCar'].getLights();
             // env.lights[1] = carLights[0];
-            gl.useProgram(program);
+            // gl.useProgram(program);
+            // for (const [meshName, rnodes] of Object.entries(meshGroup)) {
+            //     const worldMatrices = rnodes.map(n => n.getWorldMatrix());
+            //     RNode.render(gl, program, cam.projectionMatrix, viewMatrix, env, meshName, worldMatrices);
+            // }
             for (const [name, node] of Object.entries(scene)) {
                 if (node instanceof RNode) {
                     node.render(gl, program, cam.projectionMatrix, viewMatrix, env);
@@ -212,7 +217,16 @@ export function Canvas(props) {
         var sk = await loadGLTF(gl, program, "skybox.gltf", "/skybox/");
         for (const name in sk.nodes) sk.nodes[name] = new SkyNode(sk.nodes[name]);
 
-        setScence(Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes))
+        var sc = Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes);
+        const grouped = Object.entries(sc).filter(([k,v]) => v instanceof RNode).reduce((acc, [key, value]) => {
+            const mesh = value.mesh;
+            (acc[mesh] ||= []).push(value);
+            return acc;
+        }, {});
+        console.log(grouped);
+
+        setScence(sc);
+        setMeshGroup(grouped);
 
         setGame({
             play: false,

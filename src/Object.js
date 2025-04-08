@@ -1,3 +1,4 @@
+import { meshStorage } from "./gltfLoader";
 import { im, inverse, mat4mult, mat4multp, multmat4l, toVec3 } from "./Matrix";
 import { fromQuaternion, nonUniformScale, perspective, quaternionRotation, radians, toQuaternion, translation } from "./Modeling";
 import { center, getBoundingBoxVertices } from "./Physic";
@@ -48,17 +49,13 @@ export class RNode extends INode {
     constructor(other) {
         if (other) {
             super(other);
-            this.primitives = other.primitives;
+            this.mesh = other.mesh;
             this.parentMat = other.parentMat;
         } else {
             super();
-            this.primitives = [];
+            this.mesh = "";
             this.parentMat = im();
         }
-    }
-
-    addPrimitive(primitive) {
-        this.primitives.push(primitive);
     }
 
     getWorldMatrix() {
@@ -71,8 +68,20 @@ export class RNode extends INode {
 
     render(gl, program, projection, view, env) {
       gl.useProgram(program);
-      for (const primitive of this.primitives) {
+      const storedMesh = meshStorage[this.mesh];
+      for (const primitive of storedMesh.primitives) {
         gl.bindVertexArray(primitive.vao);
+        // const wmBuffer = gl.createBuffer();
+        // gl.bindBuffer(gl.ARRAY_BUFFER, wmBuffer);
+        // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(worldMatrices.flat()), gl.STATIC_DRAW);
+        // const wmLoc = gl.getAttribLocation(program, "a_WORLD_0");
+        // for (let i=0; i<4; i++) {
+        //     const loc = wmLoc + i;
+        //     gl.enableVertexAttribArray(loc);
+        //     gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 64, i * 16);
+        //     gl.vertexAttribDivisor(loc, 1);
+        // }
+
         var uProj = gl.getUniformLocation(program, "u_projection");
         gl.uniformMatrix4fv(uProj, false, projection);
         var uView = gl.getUniformLocation(program, "u_view");
@@ -128,12 +137,6 @@ export class RNode extends INode {
             gl.uniform1f(cutoff, lights[i].cutOff);
             var smoothEdge = gl.getUniformLocation(program, `u_lights[${i}].outerCutOff`);
             gl.uniform1f(smoothEdge, lights[i].outerCutOff);
-            // var lconstant = gl.getUniformLocation(program, `vLights[${i}].constant`);
-            // gl.uniform1f(lconstant, lights[i].c);
-            // var llinear = gl.getUniformLocation(program, `vLights[${i}].linear`);
-            // gl.uniform1f(llinear, lights[i].l);
-            // var lquad = gl.getUniformLocation(program, `vLights[${i}].quad`);
-            // gl.uniform1f(lquad, lights[i].q);
         }
         var lightPos = gl.getUniformLocation(program, "u_lightPos");
         gl.uniform4fv(lightPos, lights.flatMap(l => l.position));
@@ -166,7 +169,8 @@ export class PNode extends RNode {
     getWorldBoundingBox() {
         var bbs = [];
         const worldModel = this.getWorldMatrix();
-        for (const primitive of this.primitives) {
+        const storedMesh = meshStorage[this.mesh];
+        for (const primitive of storedMesh.primitives) {
             const bb = primitive.boundingBox;
             bbs.push({
                 min: mat4multp(worldModel, [bb.min[0], bb.min[1], bb.min[2], 1]),
@@ -179,7 +183,8 @@ export class PNode extends RNode {
     renderBoundingBox(gl, program, projection, view) {
         gl.useProgram(program);
         const worldMatrix = this.getWorldMatrix();
-        for (const primitive of this.primitives) {
+        const storedMesh = meshStorage[this.mesh];
+        for (const primitive of storedMesh.primitives) {
             const buffer = gl.createBuffer();
             const bbVert = getBoundingBoxVertices(primitive.boundingBox.min, primitive.boundingBox.max);
             const vertices = this.getWorldBoundingBoxVertices(bbVert, worldMatrix);
@@ -322,20 +327,21 @@ export class Car extends PNode { //INode
     }
 
     getLights(){
-        const bb = this.primitives[0].boundingBox;
-        const c = center(bb.min, bb.max);
-        return [
-            {
-                position: mat4multp(this.getWorldMatrix(), [c[0], c[1], c[2], 1]),
-                direction: toVec3(this.facing),
-                color: [1, 0, 0, 1],
-                cutOff: Math.cos(radians(3)),
-                outerCutOff: Math.cos(radians(12)),
-                ambient: [1, 1, 1],
-                specular: [1, 1, 1],
-                diffuse: [0, 0, 0]
-            }
-        ]
+        // const mesh = meshStorage[this.mesh];
+        // const bb = mesh.primitives[0].boundingBox;
+        // const c = center(bb.min, bb.max);
+        // return [
+        //     {
+        //         position: mat4multp(this.getWorldMatrix(), [c[0], c[1], c[2], 1]),
+        //         direction: toVec3(this.facing),
+        //         color: [1, 1, 0, 1],
+        //         cutOff: Math.cos(radians(3)),
+        //         outerCutOff: Math.cos(radians(12)),
+        //         ambient: [1, 1, 1],
+        //         specular: [1, 1, 1],
+        //         diffuse: [0, 0, 0]
+        //     }
+        // ]
     }
 }
   
@@ -376,12 +382,13 @@ export class CNode extends INode {
 export class SkyNode extends INode {
     constructor(rnode) {
         super();
-        this.primitives = rnode.primitives;
+        this.mesh = rnode.mesh;
     }
 
     render(gl, program, projection, view, env) {
         gl.useProgram(program);
-        for (const primitive of this.primitives) {
+        const storedMesh = meshStorage[this.mesh];
+        for (const primitive of storedMesh.primitives) {
           gl.bindVertexArray(primitive.vao);
           var uProj = gl.getUniformLocation(program, "u_projection");
           gl.uniformMatrix4fv(uProj, false, projection);
