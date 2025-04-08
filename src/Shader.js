@@ -83,7 +83,7 @@ const fs = `#version 300 es
             float Kd = max(dot(Lnorm, normal), 0.0);
             vec4 diffuse = vec4(u_lights[i].diffuse, 0.0) * Kd * (1.0 - metallic);
             float Ks = pow(max(dot(normal, H), 0.0), 1.0);
-            vec4 specular = Ks * vec4(u_lights[i].specular, 1.0);
+            vec4 specular = Ks * vec4(u_lights[i].specular, 1.0) * (1.0 - roughness);
             if(dot(Lnorm, normal) < 0.0) specular = vec4(0.0, 0.0, 0.0, 1.0);
             // Spotlight intensity calculation
             float intensity = 1.0;
@@ -95,9 +95,9 @@ const fs = `#version 300 es
             light += (ambient + (diffuse +specular)* intensity) * u_lights[i].color;
         }
         
-        vec4 finalColor = baseColor * light + vec4(emissive, 1.0);
+        vec4 finalColor = baseColor * light;
         float fogAmount = smoothstep(u_fogNear, u_fogFar, gl_FragCoord.z);
-        outColor = mix(finalColor, u_fogColor, fogAmount);  
+        outColor = mix(finalColor, u_fogColor, fogAmount) + vec4(emissive, 1.0);  
     }
 `;
 

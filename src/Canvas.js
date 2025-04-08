@@ -48,7 +48,15 @@ export function Canvas(props) {
                                 if(game.fuel + 5 < 100){
                                      game.fuel += 5;
                                 }
-                            } else {
+                            } else if (name.includes("coin")) {
+                                if (scene[name]) {
+                                    const meshName = scene[name].mesh;
+                                    delete meshGroup[meshName][name];
+                                    delete scene[name];
+                                }
+                                game.money++;
+                            } 
+                            else {
                                 window.location.reload();
                             }
                         }
@@ -87,11 +95,6 @@ export function Canvas(props) {
                 const worldMatrices = Object.values(rnodes).map(n => n.getWorldMatrix());
                 RNode.render(gl, program, cam.projectionMatrix, viewMatrix, env, meshName, worldMatrices);
             }
-            // for (const [name, node] of Object.entries(scene)) {
-            //     if (node instanceof RNode) {
-            //         node.render(gl, program, cam.projectionMatrix, viewMatrix, env);
-            //     }
-            // }
             if (showBox) {
                 program = proRef.current.boundingBox;
                 for (const [name, node] of Object.entries(scene)) {
@@ -236,7 +239,7 @@ export function Canvas(props) {
         var sk = await loadGLTF(gl, program, "skybox.gltf", "/skybox/");
         for (const name in sk.nodes) sk.nodes[name] = new SkyNode(sk.nodes[name]);
 
-        var sc = Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes, coin.nodes);
+        var sc = Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes);
         const grouped = Object.entries(sc).filter(([k,v]) => v instanceof RNode).reduce((acc, [key, value]) => {
             const mesh = value.mesh;
             if (!acc[mesh]) acc[mesh] = {};
