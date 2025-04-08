@@ -115,6 +115,7 @@ export function Canvas(props) {
         const ambient = lightTimeMap[time];
         if (ambient) {
             env.lights[0].ambient = [ambient, ambient, ambient];
+            env.lights[0].diffuse = [ambient, ambient, ambient];
         }
     }
 
@@ -175,7 +176,7 @@ export function Canvas(props) {
                     cutOff: 0,
                     outerCutOff: 0,
                     ambient: [0.8, 0.8, 0.8],
-                    specular: [1, 1, 1],
+                    specular: [0.5, 0.5, 0.5],
                     diffuse: [1, 1, 1]
                 }
             ]
