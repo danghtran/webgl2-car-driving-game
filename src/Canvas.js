@@ -2,15 +2,13 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { skinVS, fs, skyboxVs, skyboxFs, bbVs, bbFs } from './Shader';
 import { loadGLTF } from './gltfLoader';
 import { createProgram, createShader } from './WebglHelper';
-import { nonUniformScale, ortho, perspective, quaternionRotation, toQuaternion, translation } from './Modeling';
-import { mat4mult, normalize, randomFloat } from './Matrix';
+import { nonUniformScale, perspective, quaternionRotation, translation } from './Modeling';
+import { mat4mult, randomFloat, randomInt } from './Matrix';
 import { Car, CNode, PNode, RNode, SkyNode } from './Object';
-import { Button, Slider, Switch } from '@mui/material';
 import { areIntersect } from './Physic';
 import { Prefab } from './Prefab';
 import {GameMenu, StartUp} from './Menu';
-import FuelBar from './FuelBar';
-import { light } from '@mui/material/styles/createPalette';
+import {FuelBar, MoneyCounter} from './FuelBar';
 
 export function Canvas(props) {
     const canvasRef = useRef(null);
@@ -32,7 +30,7 @@ export function Canvas(props) {
                     node.applyMvmt(mvmt[name]);
                 }
             }
-            //
+            
             var carBBs = scene['ToyCar'].getWorldBoundingBox();
             var collidableNodes = Object.entries(scene)
                             .filter(([k, v]) => v instanceof PNode)
@@ -128,20 +126,32 @@ export function Canvas(props) {
         }
     }
 
+    const generateItem = () => {
+        var random = randomInt(0, 100);
+        if (random < 30) {
+            return 'tank';
+        }
+        else return 'coin';
+    }
+
     useEffect(() => {
         var id, genId, fuelId, dayId;
         if (game !== null && game.play) {
             id = setInterval(() => {
                 requestAnimationFrame(() => {
-                    
-                    setMvmt({
-                        'Camera': CNode.getAutoMvmt(),
-                        'ToyCar': scene['ToyCar'].getAutoMvmt()
-                    });
+                    var autoMvmt = {
+                        'Camera': CNode.getAutoMvmt()
+                    }
+                    if (scene) {
+                        autoMvmt['ToyCar'] = scene['ToyCar'].getAutoMvmt();
+                    }
+                    setMvmt(autoMvmt);
                 })
             }, 100);
             genId = setInterval(() => {
-                const proto = fabStore['tank'].getPrefabInstance();
+                const pref = generateItem();
+                const proto = fabStore[pref].getPrefabInstance();
+                console.log(proto)
                 const fuel = new PNode(proto.proto);
                 fuel.translate(translation([randomFloat(-3, 3), randomFloat(-3.5, -4.5), randomFloat(0.8, 1.5)]))
                 if (fuel) {
@@ -219,11 +229,14 @@ export function Canvas(props) {
 
         var t = await loadGLTF(gl, program, "Low_Poly_Forest.gltf", "/scene/");
 
+        var coin = await loadGLTF(gl, program, "coin.gltf", "/coin/");
+        fabStore['coin'] = new Prefab('coin', coin.nodes['SAND']);
+
         program = proRef.current.skybox;
         var sk = await loadGLTF(gl, program, "skybox.gltf", "/skybox/");
         for (const name in sk.nodes) sk.nodes[name] = new SkyNode(sk.nodes[name]);
 
-        var sc = Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes);
+        var sc = Object.assign({}, allnodes, t.nodes, toycar.nodes, sk.nodes, coin.nodes);
         const grouped = Object.entries(sc).filter(([k,v]) => v instanceof RNode).reduce((acc, [key, value]) => {
             const mesh = value.mesh;
             if (!acc[mesh]) acc[mesh] = {};
@@ -238,6 +251,7 @@ export function Canvas(props) {
         setGame({
             play: false,
             fuel: 100,
+            money: 0,
             time: 8
         })
 
@@ -291,7 +305,7 @@ export function Canvas(props) {
                 'Camera': camMvmt
             })
         }
-        var carMvmt = Car.getNextMvmt(e.key);
+        var carMvmt = scene['ToyCar'].getNextMvmt(e.key);
         if (carMvmt !== undefined) {
             setMvmt({
                 'ToyCar': carMvmt
@@ -301,7 +315,7 @@ export function Canvas(props) {
            
             default:
         }
-    }, []);
+    }, [scene]);
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeydownEvent);
@@ -359,7 +373,7 @@ export function Canvas(props) {
         <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight} />
         <div>
             <GameMenu onPause={onPauseGame} onFogChange={onFogIntensity} onToggleBox={onShowBox} fogValue={fogIntensity} gameTime={game?game.time:0}/>
-            <FuelBar fuel={game? game.fuel:0}/>
+            <FuelBar fuel={game? game.fuel:0} money={game?game.money:0}/>
             <StartUp onStart={onStartGame}/>
         </div>
         

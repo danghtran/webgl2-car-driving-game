@@ -225,35 +225,37 @@ export class Car extends PNode { //INode
         this.facing = [0, 0, -1, 1];
     }
 
-    static mvmtSet = {
-        "w": {
-            rotate: {
-                axis: [1,0,0], 
-                degree: -5
-            }
-        },
-        "a": {
-            rotate: {
-                axis: [0, 0, 1],
-                degree: -5
-            }
-        },
-        "d": {
-            rotate: {
-                axis: [0, 0, 1],
-                degree: 5
-            }
-        },
-        "s": {
-            rotate: {
-                axis: [1,0,0], 
-                degree: 5
-            }
+    getNextMvmt(key) {
+        switch (key) {
+            case "w":
+                return {
+                    rotate: {
+                        axis: [1,0,0], 
+                        degree: -5
+                    }
+                };
+            case "s":
+                return {
+                    rotate: {
+                        axis: [1,0,0], 
+                        degree: 5
+                    }
+                };
+            case "a":
+                return {
+                    rotate: {
+                        axis: toVec3(this.facing),
+                        degree: -5
+                    }
+                };
+            case "d":
+                return {
+                    rotate: {
+                        axis: toVec3(this.facing),
+                        degree: 5
+                    }
+                };
         }
-    }
-
-    static getNextMvmt(key) {
-        return this.mvmtSet[key];
     }
 
     rotate(rot) {

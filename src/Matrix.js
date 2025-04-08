@@ -257,6 +257,10 @@ const randomFloat = (min, max) => {
     return Math.random() * (max - min) + min;
 }
 
+const randomInt = (min, max) => {
+    return Math.floor(Math.random() * (max - min + 1) ) + min;
+  }
+
 const toVec3 = (vec4) => {
     return [vec4[0], vec4[1], vec4[2]]
 }
@@ -278,5 +282,6 @@ export {
     inverse,
     vector,
     randomFloat,
+    randomInt,
     toVec3
 };

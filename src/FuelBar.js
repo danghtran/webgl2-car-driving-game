@@ -1,55 +1,48 @@
 import React from 'react';
-import { Box, Typography, LinearProgress, Paper } from '@mui/material';
+import { Box, Typography, LinearProgress } from '@mui/material';
 import LocalGasStationIcon from '@mui/icons-material/LocalGasStation';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 
-export default function FuelBar({ fuel }) {
+export function FuelBar({ fuel, money}) {
   return (
     <Box
-      sx={{
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        zIndex: 20,
-        pointerEvents: 'none',
-        width: 200,
-        paddingTop: 2
-      }}
+      position="absolute"
+      top={16}
+      left={16}
+      display="flex"
+      flexDirection="column"
+      gap={1}
+      bgcolor="rgba(0, 0, 0, 0.6)"
+      px={2}
+      py={1.5}
+      borderRadius={2}
+      boxShadow={3}
+      width={180}
     >
-      <Paper
-        elevation={3}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          padding: '8px 12px',
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          borderRadius: 2,
-        }}
-      >
-        <LocalGasStationIcon sx={{ color: 'white' }} />
-
-        <Box sx={{ flex: 1 }}>
+      <Box display="flex" alignItems="center" gap={1}>
+        <LocalGasStationIcon sx={{ color: 'orange' }} />
+        <Box width="100%">
           <LinearProgress
             variant="determinate"
-            value={Math.max(0, Math.min(fuel, 100))}
+            value={fuel}
             sx={{
               height: 10,
               borderRadius: 5,
-              backgroundColor: 'rgba(255,255,255,0.1)',
+              backgroundColor: '#555',
               '& .MuiLinearProgress-bar': {
-                backgroundColor: fuel < 20 ? '#f44336' : '#76ff03',
+                backgroundColor: 'orange',
               },
             }}
           />
         </Box>
+      </Box>
 
-        <Typography
-          variant="body2"
-          sx={{ color: 'white', minWidth: 30, textAlign: 'right' }}
-        >
-          {Math.floor(fuel)}%
+      <Box display="flex" alignItems="center" gap={1}>
+        <MonetizationOnIcon sx={{ color: 'gold' }} />
+        <Typography variant="subtitle1" color="white">
+          {money}
         </Typography>
-      </Paper>
+      </Box>
     </Box>
   );
 }
