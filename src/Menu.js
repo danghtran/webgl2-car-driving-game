@@ -5,7 +5,7 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import NightsStayIcon from '@mui/icons-material/NightsStay';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 
-export function GameMenu({ onPause, onFogChange, onToggleBox, fogValue, gameTime}) {
+export function GameMenu({ onPause, onFogChange, onToggleBox, fogValue, gameTime, onToggleLight}) {
 
   const handleFogChange = (event, newValue) => {
     if (onFogChange) onFogChange(newValue);
@@ -13,6 +13,10 @@ export function GameMenu({ onPause, onFogChange, onToggleBox, fogValue, gameTime
 
   const handleToggleBox = (event) => {
     if (onToggleBox) onToggleBox(event.target.checked);
+  };
+
+  const handleToggleLight = (event) => {
+    if (onToggleLight) onToggleLight(event.target.checked);
   };
 
   const isDay = gameTime > 7 && gameTime < 18;
@@ -41,12 +45,10 @@ export function GameMenu({ onPause, onFogChange, onToggleBox, fogValue, gameTime
           color: 'white',
         }}
       >
-        {/* Pause Button */}
         <IconButton onClick={onPause} color="inherit">
           <PauseIcon />
         </IconButton>
 
-        {/* Fog Slider */}
         <Typography variant="body2">Clear Sky</Typography>
         <Slider
           value={fogValue}
@@ -60,6 +62,11 @@ export function GameMenu({ onPause, onFogChange, onToggleBox, fogValue, gameTime
         <Box display="flex" alignItems="center" gap={1}>
           <Typography variant="body2">Collide Box</Typography>
           <Switch onChange={handleToggleBox} color="primary" />
+        </Box>
+
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography variant="body2">Front Light</Typography>
+          <Switch onChange={handleToggleLight} color="primary" defaultChecked/>
         </Box>
         
         <Box display="flex" alignItems="center" gap={1}>

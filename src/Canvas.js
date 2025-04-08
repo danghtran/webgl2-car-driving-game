@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { skinVS, fs, skyboxVs, skyboxFs, bbVs, bbFs } from './Shader';
-import { loadGLTF } from './gltfLoader';
+import { loadGLTF, meshStorage } from './gltfLoader';
 import { createProgram, createShader } from './WebglHelper';
 import { nonUniformScale, perspective, quaternionRotation, translation } from './Modeling';
 import { mat4mult, randomFloat, randomInt } from './Matrix';
@@ -157,7 +157,7 @@ export function Canvas(props) {
                 const proto = fabStore[pref].getPrefabInstance();
                 console.log(proto)
                 const fuel = new PNode(proto.proto);
-                fuel.translate(translation([randomFloat(-3, 3), randomFloat(-3.5, -4.5), randomFloat(0.8, 1.5)]))
+                fuel.translate(translation([randomFloat(-3, 3), randomFloat(-3, -4.2), randomFloat(0.3, 1.5)]))
                 if (fuel) {
                     scene[proto.name] = fuel;
                     if(!meshGroup[fuel.mesh]) meshGroup[fuel.mesh] = {}
@@ -221,12 +221,12 @@ export function Canvas(props) {
         const allnodes = {
             'Camera': cam
         }
-        var toycar = await loadGLTF(gl,program, "toycar.gltf", "/toycar2/");
-        for (const name in toycar.nodes) toycar.nodes[name] = new Car(toycar.nodes[name]);
-        toycar.nodes['ToyCar'].translate(translation([-4.1, 0.5, -0.2]))
-        toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 1, 0], 90))
-        toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 0, 1], -90))
-        fabStore['car0'] = new Prefab('car0', toycar.nodes['ToyCar'])
+        // var toycar = await loadGLTF(gl,program, "toycar.gltf", "/toycar2/");
+        // for (const name in toycar.nodes) toycar.nodes[name] = new Car(toycar.nodes[name]);
+        // toycar.nodes['ToyCar'].translate(translation([-4.1, 0.5, -0.2]))
+        // toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 1, 0], 90))
+        // toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 0, 1], -90))
+        // fabStore['car0'] = new Prefab('car0', toycar.nodes['ToyCar'])
 
         var toycar2 = await loadGLTF(gl,program, "retrocar.gltf", "/retro/");
         for (const name in toycar2.nodes) toycar2.nodes[name] = new Car(toycar2.nodes[name]);
@@ -381,10 +381,19 @@ export function Canvas(props) {
         })
     }
 
+    const onTurnLight = (newValue) => {
+        if (scene && newValue) {
+            meshStorage[scene['ToyCar'].mesh].primitives[0].material.emissiveFactor = [1, 1, 1];
+        } else {
+            meshStorage[scene['ToyCar'].mesh].primitives[0].material.emissiveFactor = [0, 0, 0];
+        }
+    }
+
     return <div>
         <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight} />
         <div>
-            <GameMenu onPause={onPauseGame} onFogChange={onFogIntensity} onToggleBox={onShowBox} fogValue={fogIntensity} gameTime={game?game.time:0}/>
+            <GameMenu onPause={onPauseGame} onFogChange={onFogIntensity} onToggleBox={onShowBox} 
+                fogValue={fogIntensity} gameTime={game?game.time:0} onToggleLight={onTurnLight}/>
             <FuelBar fuel={game? game.fuel:0} money={game?game.money:0}/>
             <StartUp onStart={onStartGame}/>
         </div>

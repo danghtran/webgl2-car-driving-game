@@ -245,14 +245,14 @@ export class Car extends PNode { //INode
                 return {
                     rotate: {
                         axis: toVec3(this.facing),
-                        degree: -5
+                        degree: 5
                     }
                 };
             case "d":
                 return {
                     rotate: {
                         axis: toVec3(this.facing),
-                        degree: 5
+                        degree: -5
                     }
                 };
         }
