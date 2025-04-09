@@ -65,8 +65,6 @@ const getAccessorAndWebGLBuffer = (gl, gltf, accessorIndex, includeBB) => {
       bufferView.byteOffset + (accessor.byteOffset || 0), 
       accessor.count * numComponents
     );
-    // console.log(accessorIndex)
-    // console.log(data);
     var boundingBox;
     if (includeBB) {
       boundingBox = calculateBoundingBox(data);
@@ -119,8 +117,6 @@ const initiateRNodeWithVaoAndMaterial = async (gl, program, gltf, node) => {
         }
         var vName = `a_${attribName}`;
         var loc = gl.getAttribLocation(program, vName);
-        // console.log(vName);
-        // console.log(loc);
         if (attribData.type === 5123) {
           gl.vertexAttribIPointer(loc, attribData.numComponents, attribData.type, false, 0, 0);
         } else {
@@ -278,7 +274,6 @@ const loadGLTF = async (gl, program, url, prefix) => {
     const gltf = await loadJSON(prefix + url);
     gltf.prefix = prefix;
     // load all the referenced files relative to the gltf file
-    // const baseURL = new URL(url, location.href);
     gltf.buffers = await Promise.all(gltf.buffers.map((buffer) => {
       return loadBinary(prefix + buffer.uri);
     }));

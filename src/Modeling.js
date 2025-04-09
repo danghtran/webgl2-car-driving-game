@@ -104,33 +104,6 @@ const lookAt = (eye, at, up) => {
     ];
 }
 
-function lookAt2(cameraPosition, target, up) {
-    var dst = [];
-    var zAxis = normalize(
-        applyOp(cameraPosition, target, (u,v)=>u - v));
-    var xAxis = normalize(cross(up, zAxis));
-    var yAxis = normalize(cross(zAxis, xAxis));
-
-    dst[ 0] = xAxis[0];
-    dst[ 1] = xAxis[1];
-    dst[ 2] = xAxis[2];
-    dst[ 3] = 0;
-    dst[ 4] = yAxis[0];
-    dst[ 5] = yAxis[1];
-    dst[ 6] = yAxis[2];
-    dst[ 7] = 0;
-    dst[ 8] = zAxis[0];
-    dst[ 9] = zAxis[1];
-    dst[10] = zAxis[2];
-    dst[11] = 0;
-    dst[12] = cameraPosition[0];
-    dst[13] = cameraPosition[1];
-    dst[14] = cameraPosition[2];
-    dst[15] = 1;
-
-    return dst;
-}
-
 export {
     radians,
     translation,
@@ -141,7 +114,6 @@ export {
     eulerRotation,
     ortho,
     lookAt,
-    lookAt2,
     fromQuaternion,
     toQuaternion
 }

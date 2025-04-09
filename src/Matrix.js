@@ -102,64 +102,6 @@ const applyOp = (u, v, fn) => {
     return result;
 }
 
-/**
-   * creates a matrix from translation, quaternion, scale
-   * @param {Number[]} translation [x, y, z] translation
-   * @param {Number[]} quaternion [x, y, z, z] quaternion rotation
-   * @param {Number[]} scale [x, y, z] scale
-   * @return {Matrix4} dst or a new matrix if none provided
-   */
-const compose = (translation, quaternion, scale) => {
-    const res = [];
-
-    const x = quaternion[0];
-    const y = quaternion[1];
-    const z = quaternion[2];
-    const w = quaternion[3];
-
-    const x2 = x + x;
-    const y2 = y + y;
-    const z2 = z + z;
-
-    const xx = x * x2;
-    const xy = x * y2;
-    const xz = x * z2;
-
-    const yy = y * y2;
-    const yz = y * z2;
-    const zz = z * z2;
-
-    const wx = w * x2;
-    const wy = w * y2;
-    const wz = w * z2;
-
-    const sx = scale[0];
-    const sy = scale[1];
-    const sz = scale[2];
-
-    res[0] = (1 - (yy + zz)) * sx;
-    res[1] = (xy + wz) * sx;
-    res[2] = (xz - wy) * sx;
-    res[3] = 0;
-
-    res[4] = (xy - wz) * sy;
-    res[5] = (1 - (xx + zz)) * sy;
-    res[6] = (yz + wx) * sy;
-    res[7] = 0;
-
-    res[ 8] = (xz + wy) * sz;
-    res[ 9] = (yz - wx) * sz;
-    res[10] = (1 - (xx + yy)) * sz;
-    res[11] = 0;
-
-    res[12] = translation[0];
-    res[13] = translation[1];
-    res[14] = translation[2];
-    res[15] = 1;
-
-    return res;
-}
-
 const inverse = (m) => {
     var m00 = m[0 * 4 + 0];
     var m01 = m[0 * 4 + 1];
@@ -278,7 +220,6 @@ export {
     applyOp,
     cross,
     dot,
-    compose,
     inverse,
     vector,
     randomFloat,

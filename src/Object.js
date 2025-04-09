@@ -1,7 +1,7 @@
 import { meshStorage } from "./gltfLoader";
 import { im, inverse, mat4mult, mat4multp, multmat4l, toVec3 } from "./Matrix";
-import { fromQuaternion, nonUniformScale, perspective, quaternionRotation, radians, toQuaternion, translation } from "./Modeling";
-import { center, getBoundingBoxVertices } from "./Physic";
+import { fromQuaternion, nonUniformScale, perspective, quaternionRotation, toQuaternion, translation } from "./Modeling";
+import { getBoundingBoxVertices } from "./Physic";
 
 class INode {
     constructor(other) {
@@ -329,21 +329,7 @@ export class Car extends PNode { //INode
     }
 
     getLights(){
-        // const mesh = meshStorage[this.mesh];
-        // const bb = mesh.primitives[0].boundingBox;
-        // const c = center(bb.min, bb.max);
-        // return [
-        //     {
-        //         position: mat4multp(this.getWorldMatrix(), [c[0], c[1], c[2], 1]),
-        //         direction: toVec3(this.facing),
-        //         color: [1, 1, 0, 1],
-        //         cutOff: Math.cos(radians(3)),
-        //         outerCutOff: Math.cos(radians(12)),
-        //         ambient: [1, 1, 1],
-        //         specular: [1, 1, 1],
-        //         diffuse: [0, 0, 0]
-        //     }
-        // ]
+
     }
 }
   

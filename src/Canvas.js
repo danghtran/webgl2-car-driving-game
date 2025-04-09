@@ -8,7 +8,7 @@ import { Car, CNode, PNode, RNode, SkyNode } from './Object';
 import { areIntersect } from './Physic';
 import { Prefab } from './Prefab';
 import {GameMenu, StartUp} from './Menu';
-import {FuelBar, MoneyCounter} from './FuelBar';
+import {FuelBar} from './FuelBar';
 
 export function Canvas(props) {
     const canvasRef = useRef(null);
@@ -22,7 +22,7 @@ export function Canvas(props) {
     const [showBox, setShowBox] = useState(false);
     const [fogIntensity, setFogIntensity] = useState(1);
     const [fabStore, setFabStore] = useState({});
-    const [car, setCar] = useState('car0');
+    const [carLight, setCarLight] = useState([1,1,1]);
 
     const applyTransform = useCallback(() => {
         if (scene !== null) {
@@ -383,9 +383,17 @@ export function Canvas(props) {
 
     const onTurnLight = (newValue) => {
         if (scene && newValue) {
-            meshStorage[scene['ToyCar'].mesh].primitives[0].material.emissiveFactor = [1, 1, 1];
+            meshStorage[scene['ToyCar'].mesh].primitives[0].material.emissiveFactor = carLight;
         } else {
             meshStorage[scene['ToyCar'].mesh].primitives[0].material.emissiveFactor = [0, 0, 0];
+        }
+    }
+
+    const changeCarLight = (newValue) => {
+        if (scene && newValue) {
+            setCarLight([0,0,1])
+        } else {
+            setCarLight([1,1,1])
         }
     }
 
@@ -393,7 +401,8 @@ export function Canvas(props) {
         <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight} />
         <div>
             <GameMenu onPause={onPauseGame} onFogChange={onFogIntensity} onToggleBox={onShowBox} 
-                fogValue={fogIntensity} gameTime={game?game.time:0} onToggleLight={onTurnLight}/>
+                fogValue={fogIntensity} gameTime={game?game.time:0} onToggleLight={onTurnLight}
+                changeCarLight={changeCarLight}/>
             <FuelBar fuel={game? game.fuel:0} money={game?game.money:0}/>
             <StartUp onStart={onStartGame}/>
         </div>

@@ -11,4 +11,4 @@ In the project directory, you can run:
 
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-Try using button A,W,S,D,Q,E,R for some camera and car movement
+Video is available at: https://youtu.be/DDrCW8bC4UA

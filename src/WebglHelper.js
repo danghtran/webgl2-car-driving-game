@@ -9,12 +9,10 @@ const createShader = (gl, type, code) => {
     gl.deleteShader(shader);
 }
 
-const createProgram = (gl, vs, fs, options) => {
+const createProgram = (gl, vs, fs) => {
     var program = gl.createProgram();
     gl.attachShader(program, vs);
     gl.attachShader(program, fs);
-    // Object.entries(options.attribLocations)
-    //     .forEach(([attrib, loc]) => gl.bindAttribLocation(program, loc, attrib));
     gl.linkProgram(program);
     var success = gl.getProgramParameter(program, gl.LINK_STATUS);
     if (success) {

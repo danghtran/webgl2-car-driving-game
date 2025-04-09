@@ -5,7 +5,7 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import NightsStayIcon from '@mui/icons-material/NightsStay';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 
-export function GameMenu({ onPause, onFogChange, onToggleBox, fogValue, gameTime, onToggleLight}) {
+export function GameMenu({ onPause, onFogChange, onToggleBox, fogValue, gameTime, onToggleLight, changeCarLight}) {
 
   const handleFogChange = (event, newValue) => {
     if (onFogChange) onFogChange(newValue);
@@ -18,6 +18,10 @@ export function GameMenu({ onPause, onFogChange, onToggleBox, fogValue, gameTime
   const handleToggleLight = (event) => {
     if (onToggleLight) onToggleLight(event.target.checked);
   };
+
+  const handleToogleCarLight = (event) => {
+    if (changeCarLight) changeCarLight(event.target.checked);
+  }
 
   const isDay = gameTime > 7 && gameTime < 18;
 
@@ -67,6 +71,11 @@ export function GameMenu({ onPause, onFogChange, onToggleBox, fogValue, gameTime
         <Box display="flex" alignItems="center" gap={1}>
           <Typography variant="body2">Front Light</Typography>
           <Switch onChange={handleToggleLight} color="primary" defaultChecked/>
+        </Box>
+
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography variant="body2">Blue Light</Typography>
+          <Switch onChange={handleToogleCarLight} color="primary"/>
         </Box>
         
         <Box display="flex" alignItems="center" gap={1}>
