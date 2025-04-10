@@ -2,7 +2,7 @@
   "name": "assignment-final",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://18127003.github.io/cargame",
+  "homepage": "https://github.com/danghtran/webgl2-car-driving-game",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
