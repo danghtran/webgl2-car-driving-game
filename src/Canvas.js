@@ -228,24 +228,24 @@ export function Canvas(props) {
         // toycar.nodes['ToyCar'].rotate(quaternionRotation([0, 0, 1], -90))
         // fabStore['car0'] = new Prefab('car0', toycar.nodes['ToyCar'])
 
-        var toycar2 = await loadGLTF(gl,program, "retrocar.gltf", "/retro/");
+        var toycar2 = await loadGLTF(gl,program, "retrocar.gltf", "retro/");
         for (const name in toycar2.nodes) toycar2.nodes[name] = new Car(toycar2.nodes[name]);
         toycar2.nodes['ToyCar'].translate(translation([-4.1, 0.5, 1]))
         toycar2.nodes['ToyCar'].rotate(quaternionRotation([0, 1, 0], 90))
         toycar2.nodes['ToyCar'].rotate(quaternionRotation([0, 0, 1], 90))
         fabStore['car1'] = new Prefab('car1', toycar2.nodes['ToyCar'])
 
-        var fuel = await loadGLTF(gl, program, "fuel.gltf", "/fuel/");
+        var fuel = await loadGLTF(gl, program, "fuel.gltf", "fuel/");
         fuel.nodes['tank'].scale(nonUniformScale([0.5, 0.5, 0.5]))
         fabStore['tank'] = new Prefab('tank', fuel.nodes['tank'])
 
-        var t = await loadGLTF(gl, program, "Low_Poly_Forest.gltf", "/scene/");
+        var t = await loadGLTF(gl, program, "Low_Poly_Forest.gltf", "scene/");
 
-        var coin = await loadGLTF(gl, program, "coin.gltf", "/coin/");
+        var coin = await loadGLTF(gl, program, "coin.gltf", "coin/");
         fabStore['coin'] = new Prefab('coin', coin.nodes['SAND']);
 
         program = proRef.current.skybox;
-        var sk = await loadGLTF(gl, program, "skybox.gltf", "/skybox/");
+        var sk = await loadGLTF(gl, program, "skybox.gltf", "skybox/");
         for (const name in sk.nodes) sk.nodes[name] = new SkyNode(sk.nodes[name]);
 
         var sc = Object.assign({}, allnodes, t.nodes, toycar2.nodes, sk.nodes);
