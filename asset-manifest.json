@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/cargame/static/css/main.f855e6bc.css",
+    "main.js": "/cargame/static/js/main.1c4c6dab.js",
+    "static/js/453.f23f5a84.chunk.js": "/cargame/static/js/453.f23f5a84.chunk.js",
+    "index.html": "/cargame/index.html",
+    "main.f855e6bc.css.map": "/cargame/static/css/main.f855e6bc.css.map",
+    "main.1c4c6dab.js.map": "/cargame/static/js/main.1c4c6dab.js.map",
+    "453.f23f5a84.chunk.js.map": "/cargame/static/js/453.f23f5a84.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f855e6bc.css",
+    "static/js/main.1c4c6dab.js"
+  ]
+}
