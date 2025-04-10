@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/danghtran/webgl2-car-driving-game/static/css/main.f855e6bc.css",
-    "main.js": "/danghtran/webgl2-car-driving-game/static/js/main.951122d1.js",
+    "main.js": "/danghtran/webgl2-car-driving-game/static/js/main.fc42c292.js",
     "static/js/453.f23f5a84.chunk.js": "/danghtran/webgl2-car-driving-game/static/js/453.f23f5a84.chunk.js",
     "index.html": "/danghtran/webgl2-car-driving-game/index.html",
     "main.f855e6bc.css.map": "/danghtran/webgl2-car-driving-game/static/css/main.f855e6bc.css.map",
-    "main.951122d1.js.map": "/danghtran/webgl2-car-driving-game/static/js/main.951122d1.js.map",
+    "main.fc42c292.js.map": "/danghtran/webgl2-car-driving-game/static/js/main.fc42c292.js.map",
     "453.f23f5a84.chunk.js.map": "/danghtran/webgl2-car-driving-game/static/js/453.f23f5a84.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.f855e6bc.css",
-    "static/js/main.951122d1.js"
+    "static/js/main.fc42c292.js"
   ]
 }
